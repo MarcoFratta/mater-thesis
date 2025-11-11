@@ -1,0 +1,47 @@
+%----------------------------------------------------------------------------------------
+\chapter{Background}
+\label{chap:background}
+%----------------------------------------------------------------------------------------
+
+\section{The Alchemist Simulator}
+
+Alchemist is a simulation framework for 
+modeling spatially-distributed systems 
+with temporal dynamics. 
+The project originated 
+in 2010 within the context of the 
+European SAPERE project\footnote{Self-Aware Pervasive Service Ecosystems} 
+and has since developed into a general-purpose simulation platform. 
+he framework employs a chemical-inspired computational model where system evolution emerges from reactions occurring between entities distributed in space.
+
+The chemical metaphor provides a natural abstraction for modeling various phenomena. In chemical systems, molecules react according to rules that depend on their concentrations and spatial proximity. Alchemist adapts this model to computational settings: nodes represent entities that contain molecules (data) with associated concentrations (values), and reactions define how these entities interact and evolve over time. This approach has been applied to domains including biochemical reaction networks, distributed algorithms in wireless sensor networks, aggregate programming systems, crowd dynamics, epidemic spreading, and swarm robotics.
+
+The framework implements stochastic, event-driven simulation using variants of Gillespie's algorithm, enabling efficient execution even with large numbers of mobile entities.
+
+\subsection{Core Concepts and Meta-Model}
+
+Alchemist's meta-model consists of several core abstractions. A \emph{molecule} identifies a data item, while its \emph{concentration} represents the associated value. This terminology derives from chemistry but applies generically: molecules and concentrations can represent any data type, enabling the framework to model diverse domains.
+
+\emph{Nodes} are containers that hold molecules and reactions. Each node maintains local state through its molecules and executes reactions that modify this state. Nodes exist within an \emph{environment}, which provides spatial services including position tracking, distance computation, and optional mobility support. Environments may be continuous (Euclidean spaces) or discrete (graphs, grids), accommodating different spatial modeling needs.
+
+\emph{Linking rules} determine connectivity between nodes based on the environment state. Each linking rule maps nodes to \emph{neighborhoods}, consisting of a center node and its neighbors. This mechanism models communication constraints, such as distance-limited wireless networks where nodes interact only with nearby neighbors.
+
+\emph{Reactions} define system behavior. Each reaction comprises conditions, actions, and a time distribution. Conditions evaluate the environment state, returning both a boolean (enabling the reaction) and a numeric value (influencing the reaction rate). Actions modify the environment when the reaction fires. The time distribution determines reaction timing based on an instantaneous rate computed from static parameters and condition values. This enables stochastic modeling where reaction probabilities depend on current system state.
+
+\subsection{Incarnations}
+
+Alchemist's extensibility relies on \emph{incarnations}, which define type systems for concentrations and specialize the framework for specific domains. The SAPERE incarnation, the original implementation, treats concentrations as numeric values representing chemical amounts. The Protelis incarnation integrates the Protelis aggregate programming language for distributed algorithm simulation. The Scafi incarnation supports the ScaFi framework for field-based computing. The Biochemistry incarnation provides detailed biochemical reaction modeling capabilities. This architecture enables a unified simulation engine to support multiple modeling paradigms.
+
+\subsection{Key Features}
+
+The framework implements stochastic simulation using Gillespie's algorithm and variants for event scheduling. Environments track node positions and update neighborhoods dynamically, supporting mobile entities. The implementation targets efficiency, handling simulations with thousands of nodes. A plugin-based architecture enables extensions through new incarnations, environments, and reaction types. The system includes a graphical interface for real-time visualization, supports batch execution with parameter sweeps and variable dependencies, and provides data export capabilities for post-simulation analysis.
+
+\subsection{Configuration System}
+
+Alchemist simulations are currently configured via YAML files specifying the incarnation type, environment configuration, network model, node deployments, initial molecule concentrations, reaction definitions, batch simulation variables, and export settings. While YAML offers human readability, it lacks type safety and IDE support. Configuration errors surface only at runtime, complicating development and maintenance. This limitation motivates developing a type-safe Domain-Specific Language for Alchemist configuration, which constitutes the main contribution of this thesis.
+
+\section{Domain-Specific Languages}
+\section{Kotlin DSLs}
+\section{Kotlin Symbol Processing}
+\section{Existing Alchemist Configuration System}
+
