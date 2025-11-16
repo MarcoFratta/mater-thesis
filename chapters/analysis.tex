@@ -4,21 +4,18 @@
 %----------------------------------------------------------------------------------------
 
 This chapter analyzes the problem of developing a \textbf{type-safe}
-Domain-Specific Language for Alchemist configuration. 
+Domain-Specific Language for Alchemist simulations configuration. 
 The analysis establishes the foundation for the design 
 and implementation phases by identifying
 requirements, constraints, and the domain model underlying the simulation configuration.
 
 
-The chapter \textbf{begins} by defining high-level goals for the DSL.
+The chapter begins by defining the high-level goals for the DSL.
 It then examines constraints that the solution must satisfy, 
 including backward compatibility with the existing configuration system and 
 limitations imposed by the \textbf{Kotlin} language.
-Functional requirements specify what the DSL must accomplish,
-particularly equivalence with YAML semantics and integration with Alchemist's existing
-loading system. 
-Non-functional requirements address usability, \textbf{extensibility},
-and performance concerns.
+Moreover, the requirements are defined and analyzed in more detail, including 
+functional and non-functional requirements.
 
 The analysis then investigates the limitations of the current YAML-based approach and examines 
 how the existing type system constrains the solution. 
@@ -28,7 +25,7 @@ identifying key concepts and their relationships that guide the DSL design.
 \section{High-level Goals}
 
 The \textbf{primary goal} is to develop a type-safe 
-Domain-Specific Language in Kotlin that replaces YAML as the main configuration format for Alchemist simulations. 
+Domain-Specific Language in Kotlin that will replace YAML as the main configuration format for Alchemist simulations. 
 The DSL should eliminate the type safety and tooling limitations of YAML 
 while maintaining \textbf{semantic equivalence} with existing YAML configurations. 
 The adoption of a \textit{Programming Language} for the simulation configuration should improve the overall developer experience and productivity:
@@ -37,7 +34,7 @@ Moreover, the \textit{Integrated Development Environment} (IDE) support, includi
 should reduce the learning curve and improve productivity when creating simulation configurations. 
 The user can leverage the IDE to focus on the simulation configuration and less on the language syntax.
 
-The second goal concerns compatibility and integration. 
+The \textbf{second goal} concerns compatibility and integration. 
 The DSL must integrate seamlessly with Alchemist's existing loading infrastructure, 
 producing identical simulation models to those generated from YAML. 
 This ensures that simulations configured via the DSL behave identically to their YAML counterparts,
@@ -45,7 +42,7 @@ This ensures that simulations configured via the DSL behave identically to their
 
 The \textbf{third goal} focuses on expressiveness and maintainability. 
 The DSL should provide a natural, domain-appropriate syntax that makes simulation configurations more readable and maintainable 
-than their YAML equivalents. However, the DSL syntax should be as close as possible to the YAML syntax, 
+than their YAML equivalents. However, the DSL should have the same semantic as the YAML configuration, 
 allowing the user to leverage their existing knowledge of YAML to configure simulations. Moreover, the DSL, 
 should be open to extensions and should be able to support new features or new incarnations as they are developed, without 
 the need to modify the DSL itself.
@@ -68,14 +65,190 @@ Two primary constraint categories affect the DSL design:
 \end{itemize}
 
 These two constraints will be analyzed in more detail in the next sections.
+
 \subsection{Backward Compatibility}
+The backward compatibility constraint ensures that the DSL integrates with Alchemist's 
+existing configuration system without breaking existing functionality. 
+This constraint is crucial to ensure that the YAML configuration files can still be used to configure simulations, 
+even after the DSL is adopted. The Kotlin DSL should be an \textbf{alternative} to YAML, not a replacement.
+At the same time, the DSL should support all the existing YAML features and should be able to generate 
+the same simulation model as the YAML configuration.
+
+The development of the Kotlin DSL should not require any changes to the existing YAML configuration files.
+The same is true for the loading system of Alchemist, it should be able to load both YAML and Kotlin DSL configuration files. 
+The actual system should be extended but not replaced. 
+
 \subsection{Kotlin Language Constraints}
+
+Kotlin provides powerful DSL-building capabilities through receiver types and extension functions, 
+enabling concise syntax for \textbf{builder} patterns. 
+However, compared to languages like Scala, Kotlin imposes several constraints that affect DSL design and expressiveness.
+
+
+Function naming restrictions limit DSL expressiveness. Kotlin requires function names to be valid identifiers, 
+preventing the use of arbitrary symbols or special characters. 
+While Kotlin supports infix functions and operator overloading, 
+the set of overloadable operators is fixed and limited.
+This restricts the ability to create domain-specific operators that might make configurations more intuitive.
+
+Kotlin 1.6.20 introduced experimental context parameters as a mechanism for context-dependent declarations.
+However, this feature remains experimental and has some limitations:  
+context parameters cannot be used at class level or in constructors, 
+restricting their applicability to property and function declarations only. 
+
+
 \section{Functional Requirements}
+
+Functional requirements specify what the DSL must accomplish to achieve the high-level goals 
+while satisfying the identified constraints. 
+These requirements define the essential capabilities and behaviors that the DSL implementation must provide.
+Three primary functional requirements govern the DSL design:
+\begin{itemize}
+    \item \textbf{YAML equivalence}
+    \item \textbf{Loading system integration}
+    \item \textbf{Type safety}
+\end{itemize}
+
+These three functional requirements will be analyzed in more detail in the next sections.
 \subsection{YAML Equivalence}
+The YAML equivalence functional requirement ensures that the DSL can express all simulation configurations currently
+representable in YAML and produces semantically identical simulation models. 
+Since it is assumed that the current YAML configuration system is working correctly,
+it can be used as a reference to ensure that the DSL can produce the same simulation model. 
+The Alchemist YAML specification can be used as a reference to define the semantic of the DSL, since we want 
+the DSL to have the same semantic as the YAML configuration. 
+The user should be, in theory, able to convert an existing YAML configuration file to a DSL configuration file and vice versa, 
+and the two configurations should produce the same simulation model. Moreover, a user should expect 
+to find in the DSL configuration system all the features of the YAML configuration system.
+
+
 \subsection{Loading System Requirements}
+The loading system requirements mandate integration with Alchemist's existing configuration 
+loading infrastructure, enabling the DSL to work alongside YAML configurations.
+The loading system should be able to load both YAML and Kotlin DSL configuration files. 
+Currently, the loading system is able to load the simulation model from the YAML configuration file that is a
+file with a \textit{.yaml} extension.
+The loading system should be extended to be able to support also the new Kotlin DSL configuration file that is a
+file with a \textit{.kts} extension. 
+\begin{itemize}
+    \item \textbf{Via Gradle}
+    \item \textbf{Via Standalone Application}
+\end{itemize}
+
+Now the Alchemist current loading system will be analyzed in more detail, to understand how it works 
+and how it can be extended to support the new Kotlin DSL configuration file. 
+
+\subsubsection{Existing Loading System}
+
+The Alchemist loading system operates through a two-phase architecture 
+that separates configuration template preparation from actual simulation 
+instantiation.
+ This design enables batch execution scenarios
+  where multiple simulations must be generated from a single 
+  configuration template with varying parameter values.
+
+The loading process begins when a configuration 
+file is parsed into an internal map-based representation. 
+The system then enters the \textbf{Loader creation phase}, 
+during which it analyzes the configuration structure and prepares a 
+reusable template. This phase performs several critical operations:
+
+\begin{itemize}
+    \item \textbf{Variable identification}: The system traverses the 
+    configuration to identify three distinct categories of variables:
+    \begin{itemize}
+        \item \textbf{Constants}: Variables whose values can be immediately 
+        evaluated without dependencies on other variables. 
+        These are computed during loader creation and remain 
+        fixed across all simulation instances.
+        \item \textbf{Dependent variables}: Variables whose values can be computed once 
+        the values of free variables are known. 
+        These are registered during loader creation but evaluated later during simulation 
+        instantiation.
+        \item \textbf{Free variables}: Variables that require explicit user-provided values. These variables define the parameter space for batch simulations and must be instantiated with ground values before simulation construction.
+    \end{itemize}
+    
+    \item \textbf{Dependency resolution}: The system resolves dependencies between variables, ensuring that constants are evaluated first, followed by dependent variables that can be computed from constants. This process iterates until no further constants can be identified, establishing a partial ordering of variable dependencies.
+    
+    \item \textbf{Launcher configuration}: The system loads and instantiates the launcher component, which manages simulation execution lifecycle. This configuration is independent of individual simulation parameters and remains constant across batch runs.
+    
+    \item \textbf{Remote dependencies loading}: External dependencies required for the configuration are identified and prepared, enabling the system to fetch and incorporate external resources when needed.
+\end{itemize}
+
+Upon completion of the loader creation phase, a \texttt{Loader} object is produced that encapsulates the configuration template along with metadata about variables, constants, and execution parameters. This loader serves as a factory for generating simulation instances.
+
+The \textbf{simulation instantiation phase} occurs when \texttt{getWith()} is invoked with a map of variable values. This phase transforms the configuration template into an executable simulation model through the following steps:
+
+\begin{itemize}
+    \item \textbf{Variable reification}: Free variables receive their ground values from the provided map, with defaults used for unspecified variables. The system validates that all provided variable names correspond to known free variables.
+    
+    \item \textbf{Dependent variable computation}: Once all free variables have ground values, dependent variables are evaluated using their registered computation functions. The system ensures that all dependencies are satisfied before evaluation.
+    
+    \item \textbf{Value injection}: All computed values (constants, free variables, and dependent variables) are injected into the configuration map, replacing variable placeholders with concrete values throughout the configuration structure.
+    
+    \item \textbf{Simulation model construction}: The system constructs the complete simulation model, including:
+    \begin{itemize}
+        \item Environment instantiation with specified dimensions and properties
+        \item Node creation and deployment according to deployment descriptors
+        \item Molecule and concentration assignment to nodes
+        \item Reaction and program attachment to nodes
+        \item Layer configuration for spatial data structures
+        \item Linking rule establishment for network topology
+        \item Monitor and exporter setup for data collection
+        \item Simulation engine initialization
+    \end{itemize}
+\end{itemize}
+
+This two-phase architecture provides several advantages. First, it enables efficient batch execution: a single loader can generate multiple simulation instances with different parameter combinations without re-parsing the configuration. Second, it supports parameter space exploration by allowing systematic variation of free variables across simulation runs. Third, it separates concerns between configuration management (loader phase) and simulation construction (instantiation phase), improving maintainability and extensibility.
+
+The distinction between constants, dependent variables, and free variables is fundamental to this architecture. Constants represent configuration elements that remain invariant across all simulation instances, such as physical constants or fixed simulation parameters. Dependent variables enable derived parameters that depend on free variables, allowing configurations to express relationships between parameters without requiring explicit enumeration of all combinations. Free variables define the parameter space that can be varied during batch execution, enabling systematic exploration of simulation behavior across different configurations.
+
 \subsection{Type Safety}
+
+Type safety represents a fundamental requirement for the DSL, addressing one of the most significant limitations 
+of the YAML-based configuration approach. 
+Unlike YAML, where configuration errors remain undetected until runtime,
+the DSL must leverage Kotlin's type system to identify and report errors during development, before the simulation is executed.
+
+The primary advantage of type safety lies in the immediate feedback it provides to developers. 
+Modern IDEs can perform continuous type checking as the user writes code, 
+highlighting errors in real-time through visual indicators such as red underlines and error messages. 
+This immediate feedback transforms the development experience: instead of discovering a typo in a molecule name or an incorrect parameter
+type only after running the simulation, developers receive instant notification that something is wrong. 
+For instance, if a user attempts to assign a string value to a parameter that expects a numeric type, 
+the IDE will immediately flag this as an error, preventing the mistake from propagating further into the development process.
+
+Beyond error detection, type safety enforces a stricter interpretation of the configuration specification. 
+The DSL's type system acts as a formal contract that constrains what constitutes valid syntax and structure. 
+This enforcement mechanism guides developers toward correct configurations by making invalid constructs 
+impossible to express within the type system. 
+This contrasts sharply with YAML, where such structural requirements are only enforced through runtime validation.
+
+Finally, the compile-time validation provided by type safety contributes to improved confidence in configuration correctness. 
+Developers can trust that if their code compiles successfully, 
+the configuration adheres to the type constraints, eliminating entire classes of syntax errors.
+This feature should reduce the amount of time spent on fixing typos and other common errors in the configuration file.
+
 \section{Non-functional Requirements}
+
+While functional requirements define \textit{what} the DSL must accomplish,
+ non-functional requirements specify \textit{how well} the system should perform 
+ and what quality attributes it should exhibit. 
+
+These requirements address the qualitative aspects of the DSL that determine its effectiveness, maintainability, 
+and long-term viability. 
+Non-functional requirements typically involve subjective assessments of quality, usability, and performance characteristics.
+
+For a Domain-Specific Language, non-functional requirements play a crucial role in determining its adoption and success. 
+A DSL that fulfills all functional requirements but is difficult to use, lacks extensibility,
+ or performs poorly will likely fail to gain traction among developers. 
+These requirements ensure that the DSL not only works correctly but also provides a
+ positive user experience and can evolve to meet future needs.
+
+ The next sections will analyze in more detail the non-functional requirements.
+
 \subsection{DSL API Usability}
+
 \subsection{Extensibility}
 \subsection{Performance}
 \section{Requirements Analysis}

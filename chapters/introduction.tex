@@ -3,7 +3,20 @@
 \label{chap:introduction}
 %----------------------------------------------------------------------------------------
 
-%----------------------------------------------------------------------------------------
+The simulation of complex systems has become a fundamental tool in modern scientific research and engineering practice. 
+Complex systems are characterized by the interaction of numerous components that give rise to emergent behaviors that cannot be easily predicted from the individual components alone. 
+These systems span diverse domains, from biological networks and chemical reactions to distributed computing systems, social dynamics, and swarm robotics. 
+Understanding and predicting the behavior of such systems requires sophisticated simulation frameworks capable of modeling spatial distributions, temporal dynamics, and stochastic interactions.
 
+Alchemist is a simulation framework designed to address these challenges by providing a powerful platform for modeling spatially-distributed systems with temporal dynamics. 
+However, as the complexity of simulated systems increases, the current YAML-based configuration system presents significant challenges that limit productivity and reliability. 
+This thesis addresses these limitations by developing a type-safe Domain-Specific Language (DSL) in Kotlin for Alchemist configuration. 
+The DSL leverages Kotlin's type system and IDE support to provide compile-time error detection, autocomplete capabilities, and improved developer experience, while maintaining semantic equivalence with the existing YAML configuration system.
 
-
+The remainder of this thesis is organized as follows. 
+Chapter~\ref{chap:background} provides background information on Alchemist, including its application domains, use cases, and the motivation that led to this work. 
+Chapter~\ref{chap:analysis} analyzes the requirements and constraints for developing the DSL, examining the limitations of the current YAML approach and establishing the domain model. 
+Chapter~\ref{chap:design} presents the design of the DSL, including its architecture and key design decisions. 
+Chapter~\ref{chap:implementation} describes the implementation details and challenges encountered during development. 
+Chapter~\ref{chap:evaluation} evaluates the DSL through case studies and comparison with YAML configurations. 
+Finally, Chapter~\ref{chap:conclusion} summarizes the contributions and discusses future work.

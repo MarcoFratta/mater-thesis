@@ -3,7 +3,12 @@
 \label{chap:background}
 %----------------------------------------------------------------------------------------
 
-\section{The Alchemist Simulator}
+This chapter provides the background and motivation for this thesis work. 
+We begin by introducing the Alchemist simulator, describing what it is and how it is used across various application domains. 
+We then present concrete use cases that demonstrate the framework's capabilities and importance. 
+Finally, we examine the limitations of the current configuration system and explain why these limitations motivated the development of a type-safe Domain-Specific Language, establishing the foundation for this thesis contribution.
+
+\section{Alchemist}
 
 Alchemist is a simulation framework for 
 modeling spatially-distributed systems 
@@ -12,13 +17,47 @@ The project originated
 in 2010 within the context of the 
 European SAPERE project\footnote{Self-Aware Pervasive Service Ecosystems} 
 and has since developed into a general-purpose simulation platform. 
-he framework employs a chemical-inspired computational model where system evolution emerges from reactions occurring between entities distributed in space.
+The framework employs a chemical-inspired computational model where system evolution 
+emerges from reactions occurring between entities distributed in space.
 
-The chemical metaphor provides a natural abstraction for modeling various phenomena. In chemical systems, molecules react according to rules that depend on their concentrations and spatial proximity. Alchemist adapts this model to computational settings: nodes represent entities that contain molecules (data) with associated concentrations (values), and reactions define how these entities interact and evolve over time. This approach has been applied to domains including biochemical reaction networks, distributed algorithms in wireless sensor networks, aggregate programming systems, crowd dynamics, epidemic spreading, and swarm robotics.
+The chemical metaphor provides a natural abstraction for modeling various phenomena. 
+In chemical systems, molecules react according to rules that depend on their concentrations and spatial proximity.
+Alchemist adapts this model to computational settings:
+nodes represent entities that contain molecules (data) with associated concentrations (values),
+and reactions define how these entities interact and evolve over time. 
+This approach has been applied to domains including biochemical reaction networks, 
+distributed algorithms in wireless sensor networks, aggregate programming systems, crowd dynamics, epidemic spreading, and swarm robotics.
 
 The framework implements stochastic, event-driven simulation using variants of Gillespie's algorithm, enabling efficient execution even with large numbers of mobile entities.
 
 \subsection{Core Concepts and Meta-Model}
+
+\subsection{Application Domains}
+
+Alchemist has been employed to simulate complex scenarios across multiple domains, demonstrating the framework's versatility and effectiveness:
+
+\begin{itemize}
+    \item \textbf{Biochemical reaction networks}: Modeling the dynamics of chemical reactions in biological systems, where molecules represent chemical species and reactions model biochemical processes. 
+    These simulations enable researchers to understand how complex biochemical networks behave under different conditions and parameter settings.
+    
+    \item \textbf{Distributed algorithms in wireless sensor networks}: Simulating communication protocols and distributed algorithms where nodes represent sensors that communicate within limited ranges. 
+    The spatial distribution and mobility of nodes create complex interaction patterns that can be effectively modeled using Alchemist's reaction-based approach.
+    
+    \item \textbf{Aggregate programming systems}: Simulating field-based computing paradigms where computations emerge from local interactions between nodes. 
+    The framework supports incarnations for Protelis and ScaFi, enabling the simulation of aggregate programming algorithms in realistic spatial scenarios.
+    
+    \item \textbf{Crowd dynamics}: Modeling the movement and behavior of crowds in various environments. 
+    The spatial distribution of individuals and their local interactions create emergent behaviors that can be studied through simulation.
+    
+    \item \textbf{Epidemic spreading}: Simulating the spread of diseases through populations, where nodes represent individuals and reactions model infection and recovery processes. 
+    The spatial distribution and mobility patterns significantly influence the epidemic dynamics.
+    
+    \item \textbf{Swarm robotics}: Modeling the collective behavior of robotic swarms where individual robots interact locally to achieve global objectives. 
+    The framework enables the study of how local interactions give rise to coordinated swarm behaviors.
+\end{itemize}
+
+These diverse applications demonstrate Alchemist's capability to model complex systems scenarios where spatial distribution, temporal dynamics, and stochastic interactions play crucial roles. 
+The framework's flexibility allows researchers to adapt the simulation model to their specific domain requirements while leveraging a unified simulation engine.
 
 Alchemist's meta-model consists of several core abstractions. A \emph{molecule} identifies a data item, while its \emph{concentration} represents the associated value. This terminology derives from chemistry but applies generically: molecules and concentrations can represent any data type, enabling the framework to model diverse domains.
 
@@ -28,20 +67,84 @@ Alchemist's meta-model consists of several core abstractions. A \emph{molecule} 
 
 \emph{Reactions} define system behavior. Each reaction comprises conditions, actions, and a time distribution. Conditions evaluate the environment state, returning both a boolean (enabling the reaction) and a numeric value (influencing the reaction rate). Actions modify the environment when the reaction fires. The time distribution determines reaction timing based on an instantaneous rate computed from static parameters and condition values. This enables stochastic modeling where reaction probabilities depend on current system state.
 
-\subsection{Incarnations}
 
 Alchemist's extensibility relies on \emph{incarnations}, which define type systems for concentrations and specialize the framework for specific domains. The SAPERE incarnation, the original implementation, treats concentrations as numeric values representing chemical amounts. The Protelis incarnation integrates the Protelis aggregate programming language for distributed algorithm simulation. The Scafi incarnation supports the ScaFi framework for field-based computing. The Biochemistry incarnation provides detailed biochemical reaction modeling capabilities. This architecture enables a unified simulation engine to support multiple modeling paradigms.
 
-\subsection{Key Features}
 
 The framework implements stochastic simulation using Gillespie's algorithm and variants for event scheduling. Environments track node positions and update neighborhoods dynamically, supporting mobile entities. The implementation targets efficiency, handling simulations with thousands of nodes. A plugin-based architecture enables extensions through new incarnations, environments, and reaction types. The system includes a graphical interface for real-time visualization, supports batch execution with parameter sweeps and variable dependencies, and provides data export capabilities for post-simulation analysis.
 
-\subsection{Configuration System}
+\section{The Need for a Type-Safe Configuration Language}
 
-Alchemist simulations are currently configured via YAML files specifying the incarnation type, environment configuration, network model, node deployments, initial molecule concentrations, reaction definitions, batch simulation variables, and export settings. While YAML offers human readability, it lacks type safety and IDE support. Configuration errors surface only at runtime, complicating development and maintenance. This limitation motivates developing a type-safe Domain-Specific Language for Alchemist configuration, which constitutes the main contribution of this thesis.
+The limitations of the current YAML-based configuration system have become increasingly problematic as Alchemist is used for more complex simulations across diverse domains. 
+This section examines these limitations in detail and explains why they motivated the development of a type-safe Domain-Specific Language, which constitutes the main contribution of this thesis.
+
+\subsection{Current Configuration System}
+
+Alchemist simulations are currently configured via YAML files specifying the incarnation type, environment configuration, network model, node deployments, initial molecule concentrations, reaction definitions, batch simulation variables, and export settings. 
+While YAML offers human readability and a relatively simple syntax for basic configurations, it suffers from fundamental limitations that become increasingly problematic as simulation complexity grows.
+
+\subsection{Limitations}
+
+The YAML-based configuration system exhibits several critical limitations that hinder productivity and reliability, particularly as simulation complexity increases.
+
+\subsubsection{Runtime Errors}
+
+One of the primary limitations of the YAML-based configuration system is the lack of early error detection. 
+Configuration errors surface only at runtime, when the simulation is being loaded or executed. 
+These runtime errors often provide opaque and difficult-to-interpret messages that make debugging challenging. 
+For instance, a typo in a molecule name or an incorrect parameter type may not be detected until the simulation attempts to access that configuration, potentially after significant computation has already occurred. 
+The error messages typically reference internal data structures and parsing mechanisms rather than the user's configuration, making it difficult to identify and fix the root cause of the problem.
+
+This opacity is particularly problematic when working with complex simulations that involve numerous nodes, reactions, and dependencies. 
+A single configuration error can prevent the entire simulation from running, but locating the specific error in a large YAML file can be time-consuming and frustrating. 
+Researchers and practitioners lose valuable time debugging configuration issues instead of focusing on their simulation models and analysis.
+
+\subsubsection{Maintainability}
+
+As the complexity of the simulated system increases, YAML configuration files become increasingly difficult to read, understand, and maintain. 
+The hierarchical structure of YAML, while useful for simple configurations, becomes unwieldy when dealing with simulations that involve:
+
+\begin{itemize}
+    \item Hundreds or thousands of nodes with different initial states
+    \item Multiple reaction types with complex conditions and actions
+    \item Nested dependencies between variables and parameters
+    \item Multiple deployment strategies and network models
+    \item Complex batch simulation scenarios with interdependent variables
+\end{itemize}
+
+The indentation-based syntax of YAML, while visually structured, becomes error-prone as nesting levels increase. 
+A misplaced space or incorrect indentation can completely alter the configuration's meaning, leading to subtle bugs that are difficult to detect. 
+Moreover, YAML's lack of explicit type information means that developers must rely on documentation or trial-and-error to understand what types of values are expected for each configuration parameter.
+
+When simulating complex systems, configuration files can grow to hundreds or even thousands of lines. 
+In such scenarios, navigating the YAML structure, understanding relationships between different sections, and making modifications becomes increasingly challenging. 
+The absence of IDE support for YAML means that developers cannot leverage features such as autocomplete, type checking, or inline documentation, further complicating the configuration process and increasing the learning curve for new users.
+
+\subsubsection{Type Safety}
+
+YAML's lack of type safety means that configuration errors related to incorrect types are only discovered at runtime. 
+For example, a parameter that expects a numeric value might receive a string, or a list might be provided where a single value is expected. 
+These type mismatches are not detected until the configuration is parsed and used, potentially after significant development time has been invested.
+
+The absence of compile-time validation also means that refactoring configurations is risky. 
+Renaming a molecule or changing a parameter structure requires manual verification that all references have been updated correctly. 
+In complex simulations with many interdependent components, this manual process is error-prone and time-consuming. 
+The lack of type checking also makes it difficult to ensure consistency across large configuration files, where the same concepts may be referenced in multiple places.
+
+
+
+These limitations directly impact the productivity and reliability of Alchemist users. 
+Researchers working on complex simulations spend significant time debugging configuration errors that could be caught at compile-time. 
+The lack of IDE support increases the learning curve and reduces productivity, particularly for users new to the framework. 
+As Alchemist continues to be adopted for increasingly complex scenarios, these limitations become more pronounced and hinder the framework's effectiveness.
+
+The development of a type-safe Domain-Specific Language addresses these limitations by providing compile-time error detection, IDE support with autocomplete and inline documentation, and improved maintainability through explicit typing and better tooling. 
+By moving from YAML to a programming language-based configuration approach, we enable early detection of configuration errors, improve code maintainability, and provide better tooling support for complex simulation scenarios. 
+This work is motivated by the need to improve the developer experience and productivity when configuring Alchemist simulations, particularly as the framework is used for increasingly complex and sophisticated scenarios.
+
+The DSL maintains semantic equivalence with the existing YAML configuration system, ensuring that simulations configured via the DSL behave identically to their YAML counterparts. 
+This compatibility allows for gradual migration and preserves the ability to use YAML configurations when appropriate, while providing a more robust alternative for complex simulation scenarios.
 
 \section{Domain-Specific Languages}
 \section{Kotlin DSLs}
 \section{Kotlin Symbol Processing}
-\section{Existing Alchemist Configuration System}
-

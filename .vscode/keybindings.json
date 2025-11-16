@@ -1,0 +1,32 @@
+[
+  {
+    "key": "ctrl+b",
+    "command": "-workbench.action.toggleSidebarVisibility",
+    "when": "editorTextFocus && editorLangId == 'latex'"
+  },
+  {
+    "key": "ctrl+b",
+    "command": "editor.action.insertSnippet",
+    "when": "editorTextFocus && editorLangId == 'latex'",
+    "args": {
+      "snippet": "\\textbf{${TM_SELECTED_TEXT}}$0"
+    }
+  },
+  {
+    "key": "ctrl+i",
+    "command": "editor.action.insertSnippet",
+    "when": "editorTextFocus && editorLangId == 'latex'",
+    "args": {
+      "snippet": "\\textit{${TM_SELECTED_TEXT}}$0"
+    }
+  },
+  {
+    "key": "ctrl+u",
+    "command": "editor.action.insertSnippet",
+    "when": "editorTextFocus && editorLangId == 'latex'",
+    "args": {
+      "snippet": "\\underline{${TM_SELECTED_TEXT}}$0"
+    }
+  }
+]
+
