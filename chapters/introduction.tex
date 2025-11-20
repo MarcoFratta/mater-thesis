@@ -3,43 +3,66 @@
 \label{chap:introduction}
 %----------------------------------------------------------------------------------------
 
-The simulation of complex systems has become a fundamental tool in modern scientific research and engineering practice. 
-Complex systems are characterized by the interaction of numerous components that give rise to emergent behaviors that cannot be easily predicted from the individual components alone. 
-These systems span diverse domains, from biological networks and chemical reactions to distributed computing systems, social dynamics, and swarm robotics. 
-Understanding and predicting the behavior of such systems requires sophisticated simulation frameworks capable of modeling spatial distributions, temporal dynamics, and stochastic interactions.
+Simulating complex systems is a key part of modern research and engineering.
+These systems are made up of many parts that interact with each other, creating behaviors that are hard to predict 
+just by looking at the individual pieces.
+To study things like how biological networks work or how a swarm of robots moves,
+powerful simulation tools that can handle space, time, and randomness are required.
 
-Alchemist is a simulation framework designed to address these challenges by providing a powerful platform for modeling spatially-distributed systems with temporal dynamics. 
-However, as the complexity of simulated systems increases, the current YAML-based configuration system presents significant challenges that limit productivity and reliability. 
-This thesis addresses these limitations by developing a type-safe Domain-Specific Language (DSL) in Kotlin for Alchemist configuration. 
-The DSL leverages Kotlin's type system and IDE support to provide compile-time error detection, autocomplete capabilities, and improved developer experience, while maintaining semantic equivalence with the existing YAML configuration system.
+Alchemist is one such tool, designed to model these kinds of distributed systems.
+But as simulations get more complicated, setting them up becomes a real challenge.
+Right now, users have to write configuration files in YAML.
+While YAML is easy to read in simple scenarios, it becomes hard to read and maintain in more complex scenarios. 
+It also does not help to check if the configuration is actually correct 
+until the simulation is executed.
+This leads to frustration, errors, and wasted time.
+
+This thesis proposes a better way to configure Alchemist simulations.
+Instead of using static text files, a Domain-Specific Language (DSL)-\cite{fowler2010domain} using Kotlin has been developed.
+This allows users to write their configurations as if they were writing code, which brings a lot of benefits.
+Checks are performed while typing, suggestions are provided by the IDE, and the chance of making mistakes is significantly reduced.
+The goal is to make the process of setting up a simulation smoother and more reliable, enabling researchers to focus on their experiments 
+rather than fighting with configuration files.
 
 The remainder of this thesis is organized as follows. 
-Chapter~\ref{chap:background} provides background information on Alchemist, including its application domains, use cases, and the motivation that led to this work. 
-Chapter~\ref{chap:analysis} analyzes the requirements and constraints for developing the DSL, examining the limitations of the current YAML approach and establishing the domain model. 
+Section~\ref{sec:context and motivation} details the context and motivation behind this project.
+Chapter~\ref{chap:background} provides background information on Alchemist, including its application domains and use cases.
+Chapter~\ref{chap:analysis} analyzes the requirements and constraints for developing the DSL,
+ examining the limitations of the current YAML approach and establishing the domain model. 
 Chapter~\ref{chap:design} presents the design of the DSL, including its architecture and key design decisions. 
 Chapter~\ref{chap:implementation} describes the implementation details and challenges encountered during development. 
-Chapter~\ref{chap:evaluation} evaluates the DSL through case studies and comparison with YAML configurations. 
+Chapter~\ref{chap:evaluation} evaluates the DSL through tests and comparison with YAML configurations. 
 Finally, Chapter~\ref{chap:conclusion} summarizes the contributions and discusses future work.
+
 \section{Context and Motivation}
+\label{sec:context-motivation}
 \subsection{Configuring Complex Systems}
 
-\subsubsection{Configuration as a Fundamental Mechanism}
-
 Configuration constitutes a fundamental mechanism through
- which users specify the structure, behavior, and parameters
-  of complex systems without modifying the underlying implementation. 
-  In the context of computational systems, configuration encompasses 
-  the specification of runtime characteristics, architectural topology,
-   behavioral policies, and experimental parameters that govern system
-    execution. Rather than encoding these aspects directly into program 
-    logic, configurations externalize them into separate artifacts that 
-    can be modified, versioned, and reused independently of the core 
-    codebase. This separation of concerns enables a single implementation 
-    to serve diverse use cases through different configurations.
-    For example, in a simulation framework like Alchemist (add citation) a simulation
-    can be defined by creating a configuration file that specifies the 
-    all the needed parameters such as the initial state and the behavior of its components.
-    This configuration file can then be used to create a simulation instance that can be run.
+which users specify the structure, behavior, and parameters
+of complex systems without modifying the underlying implementation. 
+In the context of computational systems, configuration encompasses 
+the specification of runtime characteristics, architectural topology,
+behavioral policies, and experimental parameters that govern system
+execution. Rather than encoding these aspects directly into program 
+logic, configurations externalize them into separate artifacts that 
+can be modified, versioned, and reused independently of the core 
+codebase. This separation of concerns enables a single implementation 
+to serve diverse use cases through different configurations.
+To facilitate configuration authoring, many systems develop specialized 
+Domain-Specific Languages (DSLs) tailored to their configuration needs. 
+These DSLs provide syntax and abstractions that align with the domain concepts 
+of the target system, making configurations more intuitive and less error-prone 
+than generic data formats. Prominent examples include Docker's Dockerfile syntax-\cite{dockerfile}
+for container image construction, Kubernetes manifests-\cite{k8s}
+for orchestrating containerized 
+applications, Spring Boot's application properties and YAML configurations for 
+dependency injection and application setup, Gradle's build configuration DSL 
+for defining build scripts and dependencies. For example, in a simulation framework 
+like Alchemist a simulation can be defined by creating a configuration 
+file that specifies all the needed parameters such as the initial state and the 
+behavior of its components. This configuration file can then be used to create a 
+simulation instance that can be run.
 
     
 
@@ -62,12 +85,12 @@ The \textit{imperative configuration} paradigm focuses on specifying \textbf{how
 a system should reach its desired state through explicit sequences of 
 commands and operations. An imperative configuration defines 
 the procedural \textbf{steps} required to transform the system from its 
-current state to the target state. Each command represents an 
+current state to the \textit{target state}. Each command represents an 
 action that modifies system state, and the execution order is 
-critical to achieve the intended outcome. Shell scripts, 
-deployment automation tools like Ansible in its command-based mode 
+critical to achieve the intended outcome. Shell scripts (citation here), 
+deployment automation tools like Ansible (citation here) in its command-based mode 
 and traditional system administration procedures exemplify this approach.
-An example of an imperative configuration is \textit{Dockerfile} configuration file:
+Another example of an imperative configuration is the \textit{Dockerfile} configuration file:
 Docker is an open platform for developing, shipping, and running applications (citation)
 A \textit{Dockerfile} is the Docker's imperative configuration 
 format for building container images. 
@@ -88,6 +111,8 @@ ENV FLASK_APP=hello
 EXPOSE 8000
 CMD ["flask", "run", "--host", "0.0.0.0", "--port", "8000"]
 \end{minted}
+\captionof{lstlisting}
+{Example of a Dockerfile configuration}
 
 In this example, each \texttt{RUN}, \texttt{COPY}, and \texttt{CMD} instruction represents
  a step that modifies the container image state, 
@@ -97,18 +122,18 @@ In this example, each \texttt{RUN}, \texttt{COPY}, and \texttt{CMD} instruction 
 
 In contrast, the declarative configuration paradigm focuses 
 on specifying \textbf{what} the desired system state should be,
- abstracting away the procedural details of how that state is achieved. 
- A declarative configuration describes the target state as a set
-  of constraints, properties, and resource specifications, 
-  delegating to the configuration management 
-  system the responsibility of determining and executing the
-   necessary operations to realize that state. 
-   The system automatically computes the necessary
-   set of changes required to achieve the desired state. 
-    Tools such as Puppet, Terraform, Kubernetes manifests, 
-    and Docker Compose exemplify this paradigm. 
-    Docker Compose, for example, allows developers to declare 
-    the desired state of multi-container applications:
+abstracting away the procedural details of how that state is achieved. 
+A declarative configuration describes the target state as a set
+of constraints, properties, and resource specifications, 
+delegating to the configuration management 
+system the responsibility of determining and executing the
+necessary operations to realize that state. 
+The system automatically computes the necessary
+set of changes required to achieve the desired state. 
+Tools such as Docker Compose, Puppet-\cite{puppet}, Terraform-\cite{terraform} and Kubernetes manifests 
+exemplify this paradigm. 
+Docker Compose, for example, allows developers to declare 
+the desired state of multi-container applications using a YAML file:
 \begin{minted}{yaml}
 services:
   web:
@@ -118,11 +143,13 @@ services:
   redis:
     image: "redis:alpine"
 \end{minted}
+\captionof{lstlisting}
+{Example of a Docker Compose configuration}
 
-The declarative paradigm offers several compelling advantages that have driven its
+The declarative paradigm offers several advantages that have driven its
 adoption across modern infrastructure management. 
 \begin{enumerate}
-    \item First, declarative configurations are
+    \item Declarative configurations are
     inherently more readable and maintainable, as they document the intended system state
     without obscuring it with implementation details.
     \item They are idempotent by design:
@@ -134,60 +161,61 @@ adoption across modern infrastructure management.
     can detect when the desired state cannot be achieved and report specific discrepancies.
 \end{enumerate}
 
-\subsubsection{Application Domains and Representative Systems}
+\subsubsection{Application Domains}
 
 Declarative configuration systems have proliferated across diverse domains of software infrastructure, 
-each addressing specific challenges while adhering to common architectural principles.
- Understanding these application domains and their representative technologies provides 
- context for the subsequent discussion of configuration challenges and the motivation
-  for type-safe configuration approaches.
+each addressing specific challenges. Understanding these application domains and their
+ representative technologies provides 
+context for the subsequent discussion of configuration challenges and the motivation
+for type-safe configuration approaches proposed in this thesis.
+Some application domains and representative systems are:
+\begin{itemize}
 
-\paragraph{Infrastructure Configuration Management.}
+\item \textbf{Infrastructure Configuration Management}:
 Puppet pioneered the declarative configuration management paradigm for
- physical and virtual server infrastructure. (citation here)
-  Its resource abstraction model allows administrators to declare desired states for files,
-   packages, services, users, and other system entities,
-    with the Puppet agent responsible for ensuring these resources match their specifications.
-     Chef followed a similar philosophy while embedding configuration logic within a
-      Ruby domain-specific language, providing both declarative resource declarations and 
-      imperative programming constructs. 
-      These tools revolutionized system administration by replacing ad-hoc shell
-       scripts with version-controlled, testable configuration artefacts.
+physical and virtual server infrastructure.
+Its resource abstraction model allows administrators to declare desired states for files,
+packages, services, users, and other system entities.
+Chef-\cite{chef} followed a similar philosophy while embedding configuration logic within a
+Ruby domain-specific language, providing both declarative resource declarations and 
+imperative programming constructs. 
+These tools revolutionized system administration by replacing ad-hoc shell
+scripts with version-controlled, testable configuration artifacts.
 
-\paragraph{Cloud Infrastructure Provisioning.}
+\item \textbf{Cloud Infrastructure Provisioning}:
 Terraform extended declarative configuration to cloud resource provisioning, 
 allowing operators to declare entire cloud environments, including compute instances, 
 networks, load balancers, databases, and access policies, using a unified configuration language. 
-Its provider ecosystem supports virtually all major cloud platforms and services,
- enabling multi-cloud deployments through consistent declarative specifications.
 
-\paragraph{Container Orchestration.}
+\item \textbf{Container Orchestration}:
 Kubernetes represents perhaps the purest expression of declarative configuration in modern infrastructure.
  The Kubernetes API defines a comprehensive schema of resource type such as 
- Pods, Services, Deployments, ConfigMaps, Secrets, and dozens of others, 
- that collectively describe application topology, networking, storage, and operational policies. 
+ Pods, Services, Deployments, ConfigMaps, Secrets, and dozens of others,
  Users express desired states through YAML or JSON manifests, and Kubernetes controllers
   continuously reconcile actual cluster state with declared specifications.
+\item \textbf{Build Automation}:
+Build automation tools like Gradle provide hybrid models that combine
+declarative DSLs with imperative logic when needed.
 
-\paragraph{Application Deployment and Composition.}
-Docker Compose applies declarative configuration to application deployment, 
-allowing developers to specify multi-container applications as collections of services with 
-defined dependencies, networking, and resource constraints. 
-
-\paragraph{Simulation and Experiment Configuration.}
+\item \textbf{Complex Systems Configuration}:
 Scientific simulation frameworks like Alchemist employ 
-declarative configuration
- to specify complex experimental scenarios. 
-  This approach enables researchers to express sophisticated experimental 
-  designs without imperative programming, facilitating reproducibility 
-  and systematic parameter exploration.
+declarative configuration files to specify complex experimental scenarios. 
+Other simulation platforms, such as Eclipse MOSAIC-\cite{mosaic} for connected mobility simulations
+and AWS SimSpace Weaver-\cite{aws} for large-scale spatial simulations, similarly utilize
+declarative configuration files (JSON and YAML respectively) to define
+simulation parameters and system structures. This approach enables researchers 
+and developers to express sophisticated configurations 
+without imperative programming, facilitating reproducibility 
+and systematic parameter exploration.
+\end{itemize}
 
 These systems, while addressing distinct domains, share common architectural patterns:
 \begin{itemize}
     \item{\textbf{Resource schema}}: defines the universe of entities that the configuration system can manage, 
-    specifying the types of resources, their properties, validation rules, and semantic constraints.
+    specifying the types of resources, their properties, validation rules, and semantic constraints. It 
+    is the abstract model of the configuration system.
     \item{\textbf{Concrete syntax}}: provides a human-readable, version-controllable format for expressing configurations,
-    supporting necessary abstraction, parameterization, and composition. Some systems, like Puppet and Terraform, 
+    supporting necessary abstraction, parameterization, and composition. Some systems, like Gradle and Terraform, 
     provide a domain-specific languages with built-in
     abstraction primitives such as modules, variables, and iteration constructs. Others, like Kubernetes,
      define a pure data format (JSON/YAML). Different concrete syntaxes can target the same underlying resource schema.
@@ -201,29 +229,37 @@ These systems, while addressing distinct domains, share common architectural pat
 
 Despite the architectural sophistication of declarative configuration systems,
  the concrete syntax layer has converged on a remarkably narrow set of data serialization formats. 
- XML (Extensible Markup Language), JSON (JavaScript Object Notation), YAML (YAML Ain't Markup Language) have emerged as one 
- of the most used data formats for expressing configuration artifacts across different domains of modern software infrastructure. 
+ XML (Extensible Markup Language), JSON (JavaScript Object Notation), 
+ YAML (YAML Ain't Markup Language) have emerged as the most used data formats for expressing configuration artifacts 
+ across different domains of modern software infrastructure. 
  This convergence reflects their perceived advantages: 
  human readability, widespread tool support, and interoperability with programming language data structures. 
- However, these formats have fundamental limitations that become increasingly problematic as configuration complexity grows.
+ However, these formats have fundamental limitations that become increasingly problematic as configuration 
+ complexity grows.
 
 \subsubsection{Lack of Type Safety}
 
 XML, JSON and YAML are fundamentally \textit{untyped} data formats. 
-They represent data structures (objects, arrays, strings, numbers, booleans, and null values) without any mechanism for expressing type constraints, 
+They represent data structures (objects, arrays, strings, numbers, booleans, and null values) without any 
+mechanism for expressing type constraints, 
 required fields, or value ranges. 
 Type information exists only implicitly through runtime validation performed by the consuming application, 
 which must parse the configuration and verify that values conform to expected types and constraints. 
-This validation occurs entirely at runtime, meaning configuration errors surface only when the system attempts to load or execute the configuration,
+This validation occurs entirely at runtime, meaning configuration errors surface only when the system attempts 
+to load or execute the configuration,
  potentially after significant development effort has been invested.
 
-Beyond the absence of type constraints, XML, JSON and YAML are fundamentally limited to primitive data types supported by 
+Beyond the absence of type constraints, XML, JSON and YAML are fundamentally limited to primitive data
+ types supported by 
 the serialization format itself. 
-These formats natively support only basic scalar types along with composite structures (objects and arrays) composed of these primitives.
-This limitation becomes particularly problematic when configuration systems need to express domain-specific concepts that
+These formats natively support only basic scalar types along with composite structures (objects and arrays) 
+composed of these primitives.
+This limitation becomes particularly problematic when configuration systems need to express domain-specific 
+concepts that
  map to programming language classes, interfaces, or complex object types. 
 
-Consider simulation frameworks like Alchemist, where configurations must specify classes that will be instantiated at runtime to
+Consider simulation frameworks like Alchemist, where configurations must specify classes that
+ will be instantiated at runtime to
  represent domain entities. The YAML configuration expresses these class specifications as string literals:
 
 \begin{minted}{yaml}
@@ -239,12 +275,14 @@ deployments:
   type: Rectangle
   parameters: [1, 0, 0, 100, 100]
 \end{minted}
+\captionof{lstlisting}{Example of an Alchemist YAML configuration with class loading}
 
 Here, class names such as \texttt{Continuous2DEnvironment}, 
 \texttt{ConnectWithinDistance} and
 \texttt{Rectangle} are specified as plain strings. 
 The application must use reflection or factory patterns to resolve these string class 
-names to actual Java or Kotlin classes at runtime, instantiate them with the provided parameters,
+names to actual Java (citation here) or Kotlin (citation here) classes at runtime, 
+instantiate them with the provided parameters,
  and verify that the constructor signatures match. 
  This approach introduces several critical problems such as:
 
@@ -255,17 +293,17 @@ names to actual Java or Kotlin classes at runtime, instantiate them with the pro
     \item \textbf{No constructor parameter validation}: The parameters array must match the constructor signature, 
     but this compatibility cannot be checked statically. 
     A mismatch between parameter count, types, or order is discovered only when instantiation fails at runtime.
-    \item \textbf{No type inference or IDE support}: Since class names are strings, Integrated Development Environments (IDEs)
+    \item \textbf{No type inference or IDE support}: Since class names are strings, Integrated Development Environments (IDEs) (citation here)
      cannot provide autocomplete suggestions,
      type-aware parameter hints, or navigation to class definitions.
-
-    \item \textbf{Refactoring}: Renaming a class in the codebase requires manually updating all string references in configuration files,
+   \item \textbf{Refactoring}: Renaming a class in the codebase requires manually updating all string references in configuration files,
      with no tooling support to ensure completeness.
 \end{itemize}
 
 This pattern of specifying class names as strings for runtime instantiation is not unique to Alchemist. 
 Many frameworks employ similar approaches across different domains. 
-The Spring Framework, for instance, allows developers to define beans and their dependencies in XML configuration files,
+The Spring Framework , for instance, allows developers to define beans and their dependencies in XML 
+configuration files-\cite{beans},
  where class names are specified as strings:
 
 \begin{minted}{xml}
@@ -274,15 +312,17 @@ The Spring Framework, for instance, allows developers to define beans and their 
     <constructor-arg type="ItemImpl1" index="0" name="item" ref="item1" /> 
 </bean>
 \end{minted}
+\captionof{lstlisting}{Example of a Spring Framework XML configuration}
 
 Spring's dependency injection container resolves these string class names at runtime, 
 instantiating the classes and wiring dependencies. 
 Moreover, when configurations involve nested object construction, 
 where one class requires another class as a parameter, 
 the problem compounds. 
-Consider an Alchemist configuration specifying a time distribution that itself requires other time distribution objects:
+Consider an Alchemist configuration specifying
+ a time distribution that itself requires other time distribution objects:
 
-\begin{verbatim}
+\begin{minted}{yaml}
 time-distribution:
   type: JaktaTimeDistribution
   parameters:
@@ -295,61 +335,70 @@ time-distribution:
     act:
       type: ExponentialTime
       parameters: 1
-\end{verbatim}
+\end{minted}
+\captionof{lstlisting}{Example of an Alchemist YAML configuration with nested objects}
 
 The absence of compile-time type checking means that refactoring configurations is inherently risky.
- Renaming a service, changing a parameter structure, or modifying nested configurations requires manual verification 
- that all references have been updated correctly. 
- In complex configurations spanning multiple files or involving hundreds of interdependent components, 
- this manual process is error-prone and time-consuming.
- Type mismatches, missing required fields, and inconsistent parameter combinations are discovered only through runtime failures, 
- forcing practitioners to debug through opaque error messages and stack traces rather than receiving immediate, 
- actionable feedback during configuration authoring.
+Renaming a service, changing a parameter structure, or modifying nested configurations requires manual verification 
+that all references have been updated correctly. 
+In complex configurations spanning multiple files or involving hundreds of interdependent components, 
+this manual process is error-prone and time-consuming.
+Type mismatches, missing required fields, and inconsistent parameter combinations are discovered only through runtime failures, 
+forcing users to debug through opaque error messages and stack traces rather than receiving immediate, 
+actionable feedback during configuration authoring.
 
 \subsubsection{Limited Developer Experience}
 
-The lack of type information severely limits the capabilities of Integrated Development Environments (IDEs) and text editors.
+The lack of type information severely limits the capabilities of Integrated Development Environments (IDEs)
+and text editors.
 Without explicit schemas or type definitions, IDEs cannot provide meaningful autocomplete suggestions, 
 inline documentation, or real-time error detection. 
 Developers must rely on external documentation to understand what configuration options are available,
- what types are expected, and what constraints apply. 
- This absence of IDE support increases the learning curve for new users and reduces productivity even for experienced practitioners.
+what types are expected, and what constraints apply. 
+This absence of IDE support increases the learning curve for new users and reduces productivity even
+for experienced users.
 
 Schema validation mechanisms exist for JSON, YAML, and XML formats, 
 offering some degree of structural validation and improved IDE support.
- JSON Schema (citation here) provides a standardized way to define the expected structure of JSON documents, 
- while XML Schema Definition (XSD)(citation here) offers similar capabilities for XML. YAML configurations can leverage JSON Schema or
-  YAML-specific schema definitions to validate document structure, required fields, and basic type constraints.
+JSON Schema-\cite{jsonschema} provides a standardized way to define the expected structure of JSON documents, 
+while XML Schema Definition (XSD)-\cite{xmlschema} offers similar capabilities for XML. 
+YAML configurations can leverage JSON Schema or
+YAML-specific schema definitions to validate document structure, required fields, and basic type constraints.
 
-However, schema validation provides only partial solutions to the fundamental limitations of untyped configuration formats.
- While schemas can validate \emph{syntax}, ensuring that required fields are present, that values conform to expected primitive types,
-  and that the document structure matches a defined pattern, they provide limited support for \emph{domain logic} and \emph{semantic validation}. 
+However, schema validation provides only partial solutions to the fundamental limitations 
+of untyped configuration formats.
+While schemas can validate \emph{syntax}, ensuring that required fields are present,
+ that values conform to expected primitive types,
+and that the document structure matches a defined pattern,
+ they provide limited support for \emph{domain logic} and \emph{semantic validation}. 
 
-In principle, a schema author could enumerate all possible class names that may appear in a \texttt{type} field, 
+In the case of a system that supports class loading, including Alchemist, a schema author 
+could enumerate all possible class names that may appear in a \texttt{type} field, 
 allowing the schema to validate that the string represents one of the known classes. Similarly, 
 a schema could specify the expected parameter count and types for each enumerated class, enabling validation of constructor compatibility. 
 However, this approach requires the schema author to maintain a complete, exhaustive list of all classes that may be instantiated, 
-along with their constructor signatures. For closed systems with a fixed set of types, this is feasible and can provide meaningful validation.
+along with their constructor signatures. 
+For closed systems with a fixed set of types, this is feasible and can provide meaningful validation.
 
 The fundamental challenge arises in extensible software systems like Alchemist, 
-where the framework's plugin architecture allows users to define custom incarnations, environments, network models, and reaction types. 
-In such systems, the set of valid class types is open-ended and cannot be fully captured in a static schema definition. 
-A schema author attempting to enumerate all possible classes would face an insurmountable task: 
-the schema would need to be updated every time a new plugin or extension is developed, 
-and it would still fail to validate configurations that use custom classes unknown to the schema at the time of schema definition. 
-Even if a schema were maintained to include all built-in classes, configurations using user-defined custom classes would remain unvalidated, 
-defeating the purpose of comprehensive validation.
+where the set of valid class types is open-ended and cannot be fully captured in a static schema definition. 
+A schema author attempting to enumerate all possible classes would face a challenging task: 
+the schema would need to be updated every time a new plugin or extension is developed, or use an 
+automated tool to generate it. 
 
 Moreover, schemas cannot validate semantic relationships that require understanding the runtime behavior of classes. 
 For instance, schemas cannot ensure that YAML anchor(citation here) references resolve correctly, 
-that variable dependencies form a valid acyclic graph, or that mathematical expressions in configuration values are well-formed and type-safe. 
-These validations require understanding the semantics of the configuration language and the relationships between configuration elements, 
+that variable dependencies form a valid acyclic graph, or that mathematical expressions in configuration values
+ are well-formed and type-safe. 
+These validations require understanding the semantics of the configuration language and the relationships 
+between configuration elements, 
 which goes beyond what structural schemas can express.
 
 These schemas are typically external to the configuration file itself and 
 require explicit configuration of IDE plugins or validation tools. 
 The developer experience contrasts sharply with that of statically-typed programming languages, 
- where IDEs provide comprehensive autocomplete, type checking, refactoring support, and inline documentation based on the language's type system.
+ where IDEs provide comprehensive autocomplete, type checking, refactoring support, 
+ and inline documentation based on the language's type system.
 
 \subsubsection{Readability and Maintainability Challenges}
 
@@ -359,12 +408,11 @@ The hierarchical structure of these formats, while useful for simple configurati
 becomes unwieldy when dealing with systems
  involving dozens of components, deeply nested structures, or complex interdependencies.
  It is not uncommon to see configurations with hundreds of lines of code,
-  making it difficult to understand.
+  making it difficult to understand and maintain.
 
 Another issue of untyped configuration formats is the lack of mechanisms to reduce 
 duplication within a single file. Some formats do provide limited mechanisms 
-to reduce duplication such as YAML that supports anchors and aliases (\texttt{\&anchor} 
-and \texttt{*alias}) (citation here) 
+to reduce duplication such as YAML that supports anchors and aliases-\cite{yamlanchor}
 that allow defining 
 a value once and referencing it multiple times within the same document. 
 However, these mechanisms are fundamentally limited: they operate only within a single file, 
@@ -376,29 +424,29 @@ across multiple files and reusing components across different configuration file
 as one would expect in a programming language where classes and functions can be defined 
 in separate modules 
 and imported where needed. While XML provides standardized mechanisms for including external files 
-(such as XInclude)(citation here), YAML and JSON have no such standard capabilities. 
-Some tools provide non-standard include mechanisms (e.g., Ansible's \texttt{!include} directive)(citation here), 
-but these are tool-specific, non-portable, and lack compile-time validation. 
+such as XInclude-\cite{xmlxinclude}, YAML and JSON have no such standard capabilities. 
 This limitation forces users of the configuration system to either maintain monolithic configuration files 
 or rely on external preprocessing tools that merge files before parsing, 
 neither of which provides the type safety, IDE support, or refactoring capabilities 
 that would be available if configurations could be structured as reusable, 
-type-checked modules similar to programming language components. The limitations of JSON and YAML become particularly pronounced when configuring complex 
+type-checked modules similar to programming language components. Complex applications, like
+Alchemist, could benefit from this by being able
+ to define reusable components that can be shared across different simulations.
+
+The limitations of JSON and YAML formats become particularly pronounced when configuring complex 
 scenarios such as scientific simulations and experimental configurations. 
 Expressing complex scenarios in YAML results in very long files that tends to 
-grow more vertically than horizontally, where the  
+grow more vertically rather then horizontally, (see listing~\ref{lst:examplecomplexsimulation}), where the  
 semantic relationships between configuration elements are obscured by syntactic boilerplate. 
 
-
-\noindent
 \begin{center}
     \begin{minipage}{0.48\textwidth}
     \inputminted[
       fontsize=\tiny,
       breaklines,
-      frame=lines,
       firstline=1,
-      lastline=59
+      lastline=59, 
+      linenos
     ]{yaml}{listings/examplecomplexsimulation.yaml}
     \end{minipage}
     \hfill
@@ -406,22 +454,26 @@ semantic relationships between configuration elements are obscured by syntactic 
     \inputminted[
       fontsize=\tiny,
       breaklines,
-      frame=lines,
       firstline=60,
-      lastline=119
+      lastline=119, 
+      linenos
     ]{yaml}{listings/examplecomplexsimulation.yaml}
     \end{minipage}
+    \captionof{lstlisting}
+    {Example of a complex Alchemist simulation configuration from the
+     \protect\cite{domini2025fbfl} paper}
+    \label{lst:examplecomplexsimulation}
 \end{center}
 \newpage
 
 
 Parameter references must be expressed as strings, making it
- impossible to verify referential integrity statically. 
- Mathematical expressions and conditional logic must be encoded as strings or 
- complex nested structures, losing the clarity and type safety that programming 
- language constructs would provide. The lack of abstraction mechanisms
-  beyond simple variable substitution means that common patterns must be repeated rather 
-  than abstracted into reusable components.
+impossible to verify referential integrity statically. 
+Mathematical expressions and conditional logic must be encoded as strings or 
+complex nested structures, losing the clarity and type safety that programming 
+language constructs would provide. The lack of abstraction mechanisms
+beyond simple variable substitution means that common patterns must be repeated rather 
+than abstracted into reusable components.
 
 
 \subsubsection{Error Handling and Runtime Validation}
@@ -444,6 +496,7 @@ environment:
   parameters: [100, 100]
 network-model: {type: ConnectWithinDistance, parameters: [5]}
 \end{minted}
+\captionof{lstlisting}{Example of a correct Alchemist YAML configuration}
 
 If a single extra space is accidentally added before \texttt{network-model}, the YAML parser will interpret 
 it as a nested key under \texttt{environment}:
@@ -456,6 +509,7 @@ environment:
   # Extra tab before this line
   network-model:  {type: ConnectWithinDistance, parameters: [5]}
 \end{minted}
+\captionof{lstlisting}{Example of an Alchemist YAML configuration with incorrect indentation}
 
 This configuration is syntactically valid and will parse without error, but the \texttt{network-model} 
 will be incorrectly nested under \texttt{environment} rather than being a top-level configuration key. 
@@ -468,23 +522,40 @@ In this case the application will produce two different simulation results:
 
 The user must manually inspect the file, and check indentation levels to identify the root cause,
  a time-consuming process that becomes even more difficult as configuration files 
- grow to hundreds or thousands of lines. These kinds of errors are particularly insidious because they are not
-  detected until the simulation is executed, potentially after significant computation has already occurred.
+ grow to hundreds of lines. These kinds of errors are particularly insidious because the configuration file 
+ is still a valid file and the application may not always produce an error message.
 The problem compounds when configurations reference values that are validated only at application runtime. 
-For example, an Alchemist configuration might specify a class name that does not exist:
+For example, a Spring Boot beans configuration XML file might specify a class name that does not exist:
 
-\begin{minted}{yaml}
-environment:
-  type: NonExistentEnvironmentClass
-  parameters: [100, 100]
+\begin{minted}{xml}
+<bean id="nonExistentBean" class="com.example.NonExistentClass">
+    <property name="someProperty" value="test"/>
+</bean>
 \end{minted}
+\captionof{lstlisting}{Example of a wrong Spring XML configuration}
 
-The YAML parser will accept this configuration as valid, since \texttt{NonExistentEnvironmentClass} 
+The YAML parser will accept this configuration as valid, since \texttt{NonExistentClass} 
 is a perfectly valid string. The error will only surface when the application attempts to instantiate 
 the class at runtime.
-As configuration complexity increases, with complex nested structures, and interdependent 
-parameters, these error handling limitations become severe productivity bottlenecks. Practitioners spend 
-significant time debugging configuration errors that could be caught immediately with compile-time validation, 
+\begin{minted}[
+    fontsize=\footnotesize
+]{java}
+[...]
+Caused by: java.lang.ClassNotFoundException: com.example.NonExistentClass
+    at java.base/jdk.internal.loader.BuiltinClassLoader.loadClass
+    at java.base/jdk.internal.loader.ClassLoaders$AppClassLoader.loadClass
+[...]
+\end{minted}
+\captionof{lstlisting}{Example of a Spring boot runtime error message}
+
+As configuration complexity increases, with complex nested structures and interdependent 
+parameters, these error handling limitations become severe productivity bottlenecks. It is not always
+immediately obvious to the user to pinpoint the root cause of the error. In this case a simple mistake in the 
+fully qualified name of the class will cause a \textit{ClassNotFoundException} since the application
+is not able to locate the exact position of the class in the classpath.
+ This makes it difficult to debug the configuration error.
+Users spend significant time debugging configuration errors
+ that could be caught immediately with compile-time validation, 
 clear error messages, and IDE support that highlights problems as they type. The lack of early error detection 
 means that configuration errors are discovered only after the system attempts to execute, potentially after 
 significant computation has already occurred or after a deployment has been initiated, making the debugging 
@@ -492,179 +563,419 @@ process even more costly and frustrating.
 
 \subsection{The Need for a Type-Safe Configuration Language}
 Recent configuration languages demonstrate that declarativity can coexist with type safety and tooling support. 
-CUE unifies data, schemas, and policies inside a single constraint system, enabling incremental validation,
-order-independent unification, and reusable templates that reduce boilerplate~\cite{cue2025}.
-Dhall delivers a total, strongly typed language whose expressions normalize deterministically and can be exported to YAML or JSON
-without sacrificing safety guarantees~\cite{dhall2025}.
-The proposed solution aims to provide a type-safe configuration language for the Alchemist simulator, using Kotlin(citation here) as the implementation 
+Configuration tools like CUE-\cite{cue} unifies data, schemas, and policies inside a single constraint system, 
+enabling incremental validation,
+order-independent unification, and reusable templates that reduce boilerplate.
+Dhall-\cite{dhall} delivers a total, strongly typed language whose expressions normalize 
+deterministically and can be exported to YAML or JSON
+without sacrificing safety guarantees.
+These languages are not widely adopted, but they motivate the need for a type-safe configuration language,
+ in the sense that they show that declarativity can coexist with type safety and tooling support.
+  Another good example is 
+Gradle, that provides a hybrid model that combines declarative DSLs with imperative logic when needed, giving the user
+the best of both worlds.
+In this thesis we propose a type-safe configuration language for the Alchemist simulator, using Kotlin as the implementation 
 language.
 The need for a type-safe configuration language is motivated by the limitations of the current YAML-based configuration system, 
 as described in the previous section, and by the requirement for a more powerful configuration mechanism that can accommodate 
 the extensibility of the Alchemist simulator and the complex scenarios it enables. 
-
-This thesis proposes a Kotlin-based Domain-Specific Language as the solution. Kotlin was selected for several reasons: 
-first, the language provides first-class support for building domain-specific languages through its expressive DSL builders, 
-type-safe builders, and extension functions that enable creating fluent, readable configuration APIs. 
+Kotlin was chosen for several reasons: 
+first, the language provides first-class support for building domain-specific languages through its expressive DSL builders 
+and extension functions that enable creating fluent, readable configuration APIs. 
 Second, Alchemist is a JVM-based framework originally implemented in Java, Kotlin, and Scala, 
 which means Kotlin is already natively supported within the Alchemist ecosystem without requiring additional runtime dependencies 
-or cross-language interoperability layers. This native integration ensures seamless compatibility with existing Alchemist codebases 
-and enables direct access to the framework's APIs and domain models. Unlike YAML configurations where class names must be specified 
-as strings (e.g., \texttt{type: Continuous2DEnvironment}), the Kotlin DSL allows users to directly reference simulation domain 
-objects and classes as first-class language constructs, eliminating the need for string-based class name resolution and enabling 
-compile-time verification that the referenced classes exist and are accessible.
+or cross-language interoperability layers.
+ This native integration ensures seamless compatibility with existing Alchemist codebases 
+and enables direct access to the framework's APIs and domain models. 
 
 Kotlin's static type system, combined with its DSL capabilities and IDE ecosystem, makes it possible to encode domain 
 entities and relationships as first-class constructs that the compiler can verify. Type safety is therefore elevated from 
-an ergonomic preference to a correctness requirement: configuration authors receive compile-time diagnostics, refactoring support, 
-and reusable libraries, while the simulator benefits from semantically sound artifacts that can be validated before execution.
+an ergonomic preference to a correctness requirement: configuration authors receive compile-time diagnostics, 
+refactoring support, 
+and reusable libraries that can be shared between different projects.
 
 \section{Background}%----------------------------------------------------------------------------------------
 
 \label{chap:background}
 %----------------------------------------------------------------------------------------
 
-This chapter provides the background and motivation for this thesis work. 
-We begin by introducing the Alchemist simulator, describing what it is and how it is used across various application domains. 
-We then present concrete use cases that demonstrate the framework's capabilities and importance. 
-Finally, we examine the limitations of the current configuration system and explain why these limitations motivated the development of a type-safe Domain-Specific Language, establishing the foundation for this thesis contribution.
+This section provides the background information for this thesis work. 
+We begin by introducing the Alchemist simulator, describing what it is and how it 
+is used across various application domains.
+Then we give a definition for the concept of Domain-Specific Language (DSL), 
+and explore more in detail the usage of Kotlin to 
+build Domain-Specific Languages.
+
 
 \subsection{Alchemist}
 
-Alchemist is a simulation framework for 
-modeling spatially-distributed systems 
-with temporal dynamics. 
-The project originated 
-in 2010 within the context of the 
-European SAPERE project\footnote{Self-Aware Pervasive Service Ecosystems} 
-and has since developed into a general-purpose simulation platform. 
-The framework employs a chemical-inspired computational model where system evolution 
-emerges from reactions occurring between entities distributed in space.
+Alchemist is a general-purpose simulation framework designed for modeling
+ spatially-distributed systems with temporal dynamics. 
+The project originated in 2010 as part of the European SAPERE
+ project\footnote{Self-Aware Pervasive Service Ecosystems}-\cite{sapere}, 
+initially conceived as a chemical-oriented multi-compartment 
+stochastic simulation engine capable of supporting compartment mobility 
+while maintaining high performance, adopting an extended version of the 
+\textit{Gibson and Bruck's Next Reaction Method} (\cite{bruck}), that is able to support 
+diﬀerent rules (reactions) in diﬀerent compartments-\cite{alchemisttutorial}. Since its inception, 
+Alchemist has evolved into a comprehensive simulation platform that 
+transcends its original chemical domain, 
+enabling researchers to model diverse phenomena 
+ranging from biochemical networks to distributed computing systems, 
+crowd dynamics, and swarm robotics.
 
-The chemical metaphor provides a natural abstraction for modeling various phenomena. 
-In chemical systems, molecules react according to rules that depend on their concentrations and spatial proximity.
-Alchemist adapts this model to computational settings:
-nodes represent entities that contain molecules (data) with associated concentrations (values),
-and reactions define how these entities interact and evolve over time. 
-This approach has been applied to domains including biochemical reaction networks, 
-distributed algorithms in wireless sensor networks, aggregate programming systems, crowd dynamics, epidemic spreading, and swarm robotics.
+What distinguishes Alchemist from domain-specific simulators is its extensible \textit{meta-model} architecture. 
+Rather than being constrained to a single application domain, the framework 
+employs a loose interpretation of its core abstractions, 
+enabling different \emph{incarnations} to specialize the framework for specific domains 
+while maintaining a unified simulation engine. 
+This design philosophy allows Alchemist to serve as a versatile platform
+ where domain experts can focus on their specific modeling needs 
+without reimplementing core simulation infrastructure.
 
-The framework implements stochastic, event-driven simulation using variants of Gillespie's algorithm, enabling efficient execution even with large numbers of mobile entities.
+The simulation engine is incarnation-agnostic, 
+while domain-specific functionality is encapsulated within incarnations that can be developed
+ and extended independently.
+ Alchemist simulations are configured via YAML files, 
+ following a YAML specification \cite{yamlspecification}.
+ The configuration system is very extensible and allows to configure the simulation in a very flexible way, 
+ allowing the user to have full control over the simulation configuration.
+ However, it suffers from fundamental YAML-based configuration limitations, 
+ described in the previous section, that become increasingly problematic as simulation 
+ complexity grows.
+
 
 \subsubsection{Core Concepts and Meta-Model}
 
+Alchemist's meta-model provides a unified abstraction
+for modeling spatially-distributed systems through a chemical-inspired computational paradigm. 
+The framework's core abstractions enable the simulation of diverse phenomena 
+while maintaining a consistent conceptual model. 
+Figure~\ref{fig:alchemist-metamodel} illustrates the relationships between the main entities of the Alchemist meta-model.
+
+\begin{figure}[htbp]
+\centering
+\includesvg{figures/alchemist-metamodel}
+\caption{The Alchemist meta-model}
+\label{fig:alchemist-metamodel}
+\end{figure}
+
+The meta-model is organized around the following fundamental concepts:
+
+\begin{itemize}
+    \item \textbf{Data representation}:
+    \begin{itemize}
+        \item \emph{Molecules}: Identifiers for data items, analogous to variable names in imperative programming languages.
+         A molecule serves as a key that uniquely identifies a piece of information within a node.
+        \item \emph{Concentrations}: Values associated with particular molecules, similar to values stored in variables. 
+        The terminology derives from chemistry but applies generically: 
+        molecules and concentrations can represent any data type, enabling the framework to model diverse 
+        domains beyond chemical systems. 
+        The loose interpretation of these concepts is fundamental to Alchemist's extensibility, 
+        as different incarnations can define concentration types appropriate for their specific domain.
+    \end{itemize}
+    
+    \item \textbf{Spatial organization}:
+    \begin{itemize}
+        \item \emph{Nodes}: Containers that hold molecules and reactions, representing entities within the simulated system. 
+        Each node maintains local state through its molecules and executes reactions that modify this state over time.
+        \item \emph{Environments}: Provide spatial services essential for modeling distributed systems. 
+        The environment tracks node positions, computes distances between nodes, and optionally supports node mobility. 
+        Environments may be continuous, representing Euclidean spaces with real-valued coordinates, or discrete, 
+        representing graphs or grids. This flexibility accommodates different spatial modeling needs,
+         from continuous physical spaces to discrete network topologies.
+        \item \emph{Linking rules}: Functions that determine connectivity between nodes based on the current state of 
+        the environment. 
+        Each linking rule maps nodes to \textit{neighborhoods}, where a neighborhood consists of a center node and a set of 
+        neighboring nodes. 
+        This mechanism models communication constraints and interaction patterns, 
+        such as distance-limited wireless networks where nodes interact only with nearby neighbors. 
+        The linking rule dynamically updates neighborhoods as nodes move or as the environment changes, 
+        enabling the simulation of mobile systems with evolving connectivity patterns.
+        \item \emph{Neighborhoods}: Entities composed of a center node and its set of neighboring nodes, representing the local interaction context for each node.
+    \end{itemize}
+    
+    \item \textbf{Behavioral specification}:
+    \begin{itemize}
+        \item \emph{Reactions}: Define the behavior and evolution of the system. 
+        Each reaction comprises three essential components:
+        \begin{itemize}
+            \item \emph{Conditions}: Functions that evaluate the current environment state and 
+            determine whether the reaction can execute.
+            If a condition does not hold, the associated reaction cannot run.
+            \item \emph{Actions}: Operations that modify the environment when the reaction fires, 
+            changing molecule concentrations, node positions, or other system state.
+            \item \emph{Time distribution}: Determines when reactions occur based on an instantaneous rate computed 
+            from static parameters and condition values. 
+            This stochastic modeling approach enables reactions to occur with probabilities 
+            that depend on the current system state, creating realistic temporal dynamics where reaction
+             frequencies adapt to environmental conditions.
+        \end{itemize}
+        The reaction mechanism enables the expression of complex behaviors through composition. 
+        Multiple conditions can be combined to create sophisticated reaction rules, while actions can modify multiple
+         molecules simultaneously or trigger cascading effects. 
+         The time distribution can model various stochastic processes, 
+         from exponential distributions for memoryless events to more complex distributions that capture 
+         domain-specific timing characteristics.
+    \end{itemize}
+
+As previously noted, the framework includes several built-in \textit{incarnations}, each tailored to specific application domains.
+Each incarnation defines type systems for concentrations and specialize the framework for specific domains.
+It provides a concrete instantiation of the Alchemist meta-model by specifying the data 
+types that concentrations can assume and providing domain-specific conditions, actions, environments, 
+and reactions that operate on those types. 
+Some of the built-in incarnations are:
+    \item \textbf{SAPERE incarnation}: The initial stable incarnation developed within the European 
+    SAPERE project. 
+    It introduces \emph{Live Semantic Annotation} (LSA), dynamic representations of resource state
+     (sensors, services, actuators).
+     In Alchemist, LSAs are implemented as tuples through \texttt{LsaMolecule}, 
+    stored as node data. Their evolution follows \emph{Eco-Laws}, rewriting rules similar to chemical 
+    reactions that 
+    consume matching tuples and produce new ones, creating ecosystem-like behaviors-\cite{alchemistsapere}.
+    \item \textbf{Protelis incarnation}: Integrates the Protelis-\cite{protelis} aggregate programming language,
+    enabling the simulation of distributed algorithms where computations emerge from local interactions between nodes.
+    \item \textbf{Scafi incarnation}: Supports the ScaFi-\cite{scafi} framework for field-based computing, 
+    providing similar capabilities for aggregate programming scenarios.
+    \item \textbf{Biochemistry incarnation}: Provides detailed biochemical reaction modeling capabilities, 
+    supporting reactions that occur within cells, between cells, and between cells and their environment, 
+    including support for cell junctions and collisions.
+\end{itemize}
+
+This incarnation-based architecture enables a unified simulation engine 
+to support multiple modeling paradigms while 
+allowing researchers to extend the framework with custom incarnations for specialized domains. .
+
 \subsubsection{Application Domains}
 
-Alchemist has been employed to simulate complex scenarios across multiple domains, demonstrating the framework's versatility and effectiveness:
+Alchemist has been employed to simulate complex scenarios across multiple domains, 
+demonstrating the framework's versatility and effectiveness, some of them are:
 
 \begin{itemize}
-    \item \textbf{Biochemical reaction networks}: Modeling the dynamics of chemical reactions in biological systems, where molecules represent chemical species and reactions model biochemical processes. 
-    These simulations enable researchers to understand how complex biochemical networks behave under different conditions and parameter settings.
-    
-    \item \textbf{Distributed algorithms in wireless sensor networks}: Simulating communication protocols and distributed algorithms where nodes represent sensors that communicate within limited ranges. 
-    The spatial distribution and mobility of nodes create complex interaction patterns that can be effectively modeled using Alchemist's reaction-based approach.
-    
-    \item \textbf{Aggregate programming systems}: Simulating field-based computing paradigms where computations emerge from local interactions between nodes. 
-    The framework supports incarnations for Protelis and ScaFi, enabling the simulation of aggregate programming algorithms in realistic spatial scenarios.
+    \item \textbf{Biochemical reaction networks}: Modeling the dynamics of chemical reactions in biological systems,
+     where molecules represent chemical species and reactions model biochemical processes. 
+    These simulations enable researchers to understand how complex biochemical networks behave under 
+    different conditions and parameter settings. (\cite{inbook})
+
+    \item \textbf{Aggregate programming systems}: Simulating field-based computing paradigms where computations
+     emerge from local interactions between nodes. 
+    The framework supports incarnations for Protelis and ScaFi, enabling the simulation of aggregate programming
+     algorithms in realistic spatial scenarios. (\cite{aggregateexample})
     
     \item \textbf{Crowd dynamics}: Modeling the movement and behavior of crowds in various environments. 
-    The spatial distribution of individuals and their local interactions create emergent behaviors that can be studied through simulation.
+    The spatial distribution of individuals and their local interactions create emergent behaviors that can be 
+    studied through simulation. (\cite{turin})
     
-    \item \textbf{Epidemic spreading}: Simulating the spread of diseases through populations, where nodes represent individuals and reactions model infection and recovery processes. 
-    The spatial distribution and mobility patterns significantly influence the epidemic dynamics.
-    
-    \item \textbf{Swarm robotics}: Modeling the collective behavior of robotic swarms where individual robots interact locally to achieve global objectives. 
-    The framework enables the study of how local interactions give rise to coordinated swarm behaviors.
+    \item \textbf{Swarm robotics}: Modeling the collective behavior of robotic swarms where individual robots interact
+     locally to achieve global objectives. 
+    The framework enables the study of how local interactions give rise to coordinated swarm behaviors. (\cite{swarmprogramming})
 \end{itemize}
 
-These diverse applications demonstrate Alchemist's capability to model complex systems scenarios where spatial distribution, temporal dynamics, and stochastic interactions play crucial roles. 
-The framework's flexibility allows researchers to adapt the simulation model to their specific domain requirements while leveraging a unified simulation engine.
+These diverse applications demonstrate Alchemist's capability to model complex systems
+scenarios where spatial distribution,
+temporal dynamics, and stochastic interactions play crucial roles. 
 
-Alchemist's meta-model consists of several core abstractions. A \emph{molecule} identifies a data item, while its \emph{concentration} represents the associated value. This terminology derives from chemistry but applies generically: molecules and concentrations can represent any data type, enabling the framework to model diverse domains.
+\subsection{Domain Specific Languages}
+\label{subsec:dsl}
 
-\emph{Nodes} are containers that hold molecules and reactions. Each node maintains local state through its molecules and executes reactions that modify this state. Nodes exist within an \emph{environment}, which provides spatial services including position tracking, distance computation, and optional mobility support. Environments may be continuous (Euclidean spaces) or discrete (graphs, grids), accommodating different spatial modeling needs.
+A Domain-Specific Language (DSL) is a computer programming language of limited expressiveness focused on a particular domain~\cite{fowler2010domain}.
+Unlike General-Purpose Languages (GPLs) such as Java, C++, or Kotlin, which are designed to be applicable across a broad range of application domains, DSLs are specialized tools tailored to a specific problem space.
+The fundamental premise of a DSL is to provide a notation that allows domain experts to express solutions in terms of domain concepts rather than programming constructs.
+By raising the level of abstraction, DSLs enable users to focus on \textit{what} to compute rather than \textit{how} to compute it, bridging the semantic gap between the problem domain and the implementation~\cite{vandeursen2000dsl}.
 
-\emph{Linking rules} determine connectivity between nodes based on the environment state. Each linking rule maps nodes to \emph{neighborhoods}, consisting of a center node and its neighbors. This mechanism models communication constraints, such as distance-limited wireless networks where nodes interact only with nearby neighbors.
+The development and adoption of DSLs are driven by several key advantages.
+First, they offer improved \textbf{productivity} and \textbf{reliability} within their specific domain.
+Because the language constructs align directly with domain concepts, programs written in a DSL are typically more concise and self-documenting than their GPL equivalents.
+This conciseness reduces the cognitive load on developers and minimizes the likelihood of lower-level implementation errors.
+Second, DSLs facilitate better \textbf{communication} between software developers and domain experts.
+A well-designed DSL can serve as a common language that both groups can understand, allowing domain experts to validate or even directly author the logic that drives the system.
+However, these benefits come with trade-offs.
+Designing and implementing a DSL requires significant effort and specialized skills.
+There is also a learning curve associated with any new language, and the tooling support (IDEs, debuggers, testing frameworks) for a custom DSL typically lags behind that of established GPLs unless significant investment is made~\cite{mernik2005when}.
 
-\emph{Reactions} define system behavior. Each reaction comprises conditions, actions, and a time distribution. Conditions evaluate the environment state, returning both a boolean (enabling the reaction) and a numeric value (influencing the reaction rate). Actions modify the environment when the reaction fires. The time distribution determines reaction timing based on an instantaneous rate computed from static parameters and condition values. This enables stochastic modeling where reaction probabilities depend on current system state.
+DSLs are generally classified into two primary categories based on their implementation approach: \textbf{external} and \textbf{internal} DSLs.
 
+\subsubsection{External DSLs}
 
-Alchemist's extensibility relies on \emph{incarnations}, which define type systems for concentrations and specialize the framework for specific domains. The SAPERE incarnation, the original implementation, treats concentrations as numeric values representing chemical amounts. The Protelis incarnation integrates the Protelis aggregate programming language for distributed algorithm simulation. The Scafi incarnation supports the ScaFi framework for field-based computing. The Biochemistry incarnation provides detailed biochemical reaction modeling capabilities. This architecture enables a unified simulation engine to support multiple modeling paradigms.
+An external DSL is a language that has its own custom syntax and is parsed independently of the host language used to implement 
+the application.
+Common examples include SQL for database queries, CSS for styling web pages, and Regular Expressions for text matching.
+Because external DSLs are not constrained by the syntax of an existing programming language, their designers have complete 
+freedom to define a notation that best fits the domain.
+This allows for highly expressive and readable syntaxes that can be optimized for domain experts who may not be programmers.
 
+A prevalent subset of external DSLs adopts standard data serialization formats, such as XML, JSON, or YAML, as their concrete syntax.
+In this approach, the DSL designer defines a schema and a set of semantic rules that interpret the data structure as executable logic.
+This strategy eliminates the need to implement a custom lexer and parser, as robust libraries for these formats are available in virtually all programming environments.
+Tools like Ansible (using YAML), Kubernetes (using YAML/JSON), and Maven (using XML) exemplify this pattern.
+However, relying on a generic data format imposes significant constraints: the DSL is limited to the syntactic primitives of the format (e.g., key-value pairs, lists, scalars), often lacking native support for control flow, variables, or type checking.
+As discussed in the context of Alchemist's current configuration, this can lead to verbose files and runtime errors that are
+difficult to diagnose~\cite{fowler2010domain}.
 
-The framework implements stochastic simulation using Gillespie's algorithm and variants for event scheduling. Environments track node positions and update neighborhoods dynamically, supporting mobile entities. The implementation targets efficiency, handling simulations with thousands of nodes. A plugin-based architecture enables extensions through new incarnations, environments, and reaction types. The system includes a graphical interface for real-time visualization, supports batch execution with parameter sweeps and variable dependencies, and provides data export capabilities for post-simulation analysis.
+However, for custom external DSLs, the freedom of syntax comes at a cost.
+Implementing a fully custom external DSL requires building a full language infrastructure, including a lexer, parser, 
+and interpreter or code generator.
+Furthermore, integrating an external DSL with the host application can be complex, often requiring a bridge that maps
+ the DSL's abstract syntax tree (AST) to the host language's objects.
+Tooling support is another significant challenge; features like syntax highlighting, code completion, and refactoring 
+support must be built from scratch, which is a non-trivial undertaking.
 
-%\section{The Need for a Type-Safe Configuration Language}
+\subsubsection{Internal DSLs}
 
-The limitations of the current YAML-based configuration system have become increasingly problematic as Alchemist is used for more complex simulations across diverse domains. 
-This section examines these limitations in detail and explains why they motivated the development of a type-safe Domain-Specific Language, which constitutes the main contribution of this thesis.
+An internal DSL (also known as an embedded DSL) is implemented within an existing host General-Purpose Language.
+It leverages the syntax and semantics of the host language to create a specialized API that feels like a custom language.
+Examples include the Gradle build system (based on Groovy and Kotlin), Ruby on Rails' Active Record, and many testing
+ frameworks like ScalaTest or Kotest.
 
-%\subsection{Current Configuration System}
-
-Alchemist simulations are currently configured via YAML files specifying the incarnation type, environment configuration, network model, node deployments, initial molecule concentrations, reaction definitions, batch simulation variables, and export settings. 
-While YAML offers human readability and a relatively simple syntax for basic configurations, it suffers from fundamental limitations that become increasingly problematic as simulation complexity grows.
-
-%\subsection{Limitations}
-
-The YAML-based configuration system exhibits several critical limitations that hinder productivity and reliability, particularly as simulation complexity increases.
-
-%\subsubsection{Runtime Errors}
-
-One of the primary limitations of the YAML-based configuration system is the lack of early error detection. 
-Configuration errors surface only at runtime, when the simulation is being loaded or executed. 
-These runtime errors often provide opaque and difficult-to-interpret messages that make debugging challenging. 
-For instance, a typo in a molecule name or an incorrect parameter type may not be detected until the simulation attempts to access that configuration, potentially after significant computation has already occurred. 
-The error messages typically reference internal data structures and parsing mechanisms rather than the user's configuration, making it difficult to identify and fix the root cause of the problem.
-
-This opacity is particularly problematic when working with complex simulations that involve numerous nodes, reactions, and dependencies. 
-A single configuration error can prevent the entire simulation from running, but locating the specific error in a large YAML file can be time-consuming and frustrating. 
-Researchers and practitioners lose valuable time debugging configuration issues instead of focusing on their simulation models and analysis.
-
-%\subsubsection{Maintainability}
-
-As the complexity of the simulated system increases, YAML configuration files become increasingly difficult to read, understand, and maintain. 
-The hierarchical structure of YAML, while useful for simple configurations, becomes unwieldy when dealing with simulations that involve:
-
-\begin{itemize}
-    \item Hundreds or thousands of nodes with different initial states
-    \item Multiple reaction types with complex conditions and actions
-    \item Nested dependencies between variables and parameters
-    \item Multiple deployment strategies and network models
-    \item Complex batch simulation scenarios with interdependent variables
-\end{itemize}
-
-The indentation-based syntax of YAML, while visually structured, becomes error-prone as nesting levels increase. 
-A misplaced space or incorrect indentation can completely alter the configuration's meaning, leading to subtle bugs that are difficult to detect. 
-Moreover, YAML's lack of explicit type information means that developers must rely on documentation or trial-and-error to understand what types of values are expected for each configuration parameter.
-
-When simulating complex systems, configuration files can grow to hundreds or even thousands of lines. 
-In such scenarios, navigating the YAML structure, understanding relationships between different sections, and making modifications becomes increasingly challenging. 
-The absence of IDE support for YAML means that developers cannot leverage features such as autocomplete, type checking, or inline documentation, further complicating the configuration process and increasing the learning curve for new users.
-
-%\subsubsection{Type Safety}
-
-YAML's lack of type safety means that configuration errors related to incorrect types are only discovered at runtime. 
-For example, a parameter that expects a numeric value might receive a string, or a list might be provided where a single value is expected. 
-These type mismatches are not detected until the configuration is parsed and used, potentially after significant development time has been invested.
-
-The absence of compile-time validation also means that refactoring configurations is risky. 
-Renaming a molecule or changing a parameter structure requires manual verification that all references have been updated correctly. 
-In complex simulations with many interdependent components, this manual process is error-prone and time-consuming. 
-The lack of type checking also makes it difficult to ensure consistency across large configuration files, where the same concepts may be referenced in multiple places.
+Internal DSLs trade syntactic freedom for implementation simplicity and tooling support.
+Since they are valid programs in the host language, they automatically benefit from the existing compiler,
+ parser, and tooling ecosystem.
+Users get autocomplete, refactoring, and debugging capabilities "for free".
+Interaction with the rest of the application is seamless, as the DSL constructs are simply objects and functions in the host language.
+The primary limitation is that the DSL must conform to the syntax rules of the host language.
+Braces, parentheses, and keyword restrictions of the host language cannot be violated, which may result in a syntax 
+that is slightly more \textit{noisy} than a pure external DSL.
+However, modern languages with flexible syntax features, such as Ruby, Scala, and Kotlin, have made it possible to 
+create internal DSLs that are remarkably clean and expressive~\cite{fowler2010domain}.
 
 
+In the context of this thesis, the choice of an internal DSL hosted in Kotlin represents a strategic balance since
+it avoids the heavy burden of maintaining a custom parser and IDE plugin while delivering a type-safe,
+ tool-friendly configuration experience.
+Furthermore, this choice is strongly motivated by the architectural history of the Alchemist simulator.
+Originally built in Java and subsequently evolved to include components in Kotlin and Scala,
+ Alchemist is a polyglot framework that runs on the Java Virtual Machine (JVM).
+Kotlin's designed-in interoperability with Java and other JVM languages ensures that the DSL 
+can seamlessly integrate with the existing simulation engine, 
+creating a unified ecosystem without the need for complex bridge layers or adapters.
 
-These limitations directly impact the productivity and reliability of Alchemist users. 
-Researchers working on complex simulations spend significant time debugging configuration errors that could be caught at compile-time. 
-The lack of IDE support increases the learning curve and reduces productivity, particularly for users new to the framework. 
-As Alchemist continues to be adopted for increasingly complex scenarios, these limitations become more pronounced and hinder the framework's effectiveness.
-
-The development of a type-safe Domain-Specific Language addresses these limitations by providing compile-time error detection, IDE support with autocomplete and inline documentation, and improved maintainability through explicit typing and better tooling. 
-By moving from YAML to a programming language-based configuration approach, we enable early detection of configuration errors, improve code maintainability, and provide better tooling support for complex simulation scenarios. 
-This work is motivated by the need to improve the developer experience and productivity when configuring Alchemist simulations, particularly as the framework is used for increasingly complex and sophisticated scenarios.
-
-The DSL maintains semantic equivalence with the existing YAML configuration system, ensuring that simulations configured via the DSL behave identically to their YAML counterparts. 
-This compatibility allows for gradual migration and preserves the ability to use YAML configurations when appropriate, while providing a more robust alternative for complex simulation scenarios.
-
-\subsection{Domain-Specific Languages}
 \subsection{Kotlin DSLs}
+\label{subsec:kotlin-dsls}
+
+Kotlin has emerged as a premier language for developing internal DSLs on the JVM, primarily due to its flexible syntax
+and specific language features designed to support type-safe builders~\cite{kotlininaction}.
+The language's design philosophy prioritizes readability and conciseness, allowing developers to create APIs that
+ closely resemble natural language or declarative specifications.
+This capability has led to the widespread adoption of Kotlin DSLs across the ecosystem.
+Prominent examples include the Gradle Kotlin DSL~\cite{gradleKotlinDSL} for build automation, 
+Ktor~\cite{ktorDSL} for asynchronous web applications, and Jetpack Compose for Android UI development.
+These frameworks demonstrate how Kotlin can transform 
+complex configuration and logic definition tasks into type-safe, readable code structures.
+
+The power of Kotlin for DSL construction rests on several key language mechanisms that work in concert to hide implementation details and expose a clean, declarative surface syntax.
+
+\subsubsection{Lambdas with Receivers}
+
+The cornerstone of Kotlin DSLs is the concept of \textit{lambdas with receivers}.
+In standard lambda expressions, the context (the \texttt{this} reference) is inherited from the surrounding scope.
+However, Kotlin allows defining a lambda type that has an associated receiver type, denoted as \texttt{ReceiverType.() -> Unit}.
+Inside such a lambda, the client code can call methods of the receiver object directly, without any qualifier.
+This feature enables the creation of hierarchical, builder-style APIs where nested blocks correspond to nested objects
+ in the configuration structure.
+
+\begin{minted}{kotlin}
+fun html(init: HTML.() -> Unit): HTML {
+    val html = HTML()
+    html.init()
+    return html
+}
+
+html {
+    head {
+        title { +"Kotlin DSL" }
+    }
+    body {
+        p { +"Hello, World!" }
+    }
+}
+\end{minted}
+\captionof{lstlisting}{Example of a simple HTML builder DSL using lambdas with receivers}
+
+In this example, the \texttt{head} and \texttt{body} functions are members of the \texttt{HTML} class, 
+but they appear as top-level keywords within the \texttt{html} block.
+This mechanism mimics the structure of markup languages while retaining full Turing-complete
+ capabilities for variables, loops, and conditionals. 
+By combining lambdas with receivers and the type system, Kotlin enables \textit{type-safe builders}~\cite{typeSafeBuilders}.
+Unlike dynamic builders in languages like Groovy, Kotlin's builders enforce strict scope control.
+
+\subsubsection{Trailing Lambdas}
+
+Kotlin allows a lambda expression to be moved outside the parentheses if it is the last argument of a function call.
+If the lambda is the \textit{only} argument, the parentheses can be omitted entirely.
+This syntactic sugar is crucial for DSL readability, as it eliminates the visual noise of 
+nested parentheses and makes function calls look like built-in language control structures or blocks.
+
+\begin{minted}{kotlin}
+// Function definition taking a lambda as the last parameter
+fun repeat(times: Int, action: (Int) -> Unit) { ... }
+
+// Usage with trailing lambda syntax
+repeat(3) { index ->
+    println("Iteration $index")
+}
+\end{minted}
+\captionof{lstlisting}{Example of trailing lambda syntax making the function call resemble a control structure}
+
+\subsubsection{Extension Functions}
+
+Extension functions allow adding new functionality to existing classes without inheriting 
+from them or using design patterns like Decorator.
+In the context of DSLs, they enable the augmentation of third-party classes or core library
+types with domain-specific convenience methods, further integrating the DSL vocabulary with the underlying domain model.
+
+\begin{minted}{kotlin}
+// Extension property to create time durations from Integers
+val Int.seconds: Duration
+    get() = Duration.ofSeconds(this.toLong())
+
+// Usage within the DSL
+environment {
+    timeout = 10.seconds 
+}
+\end{minted}
+\captionof{lstlisting}{Using extension properties to add domain-specific syntax to primitive types}
+
+\subsubsection{Context Receivers and Context Parameters}
+
+A recent evolution in Kotlin's design is the introduction of \textit{context parameters}~\cite{contextParameters}.
+These features allow functions to declare dependencies on multiple contexts simultaneously, 
+without requiring deeply nested wrapping objects.
+For DSLs, this promises even more expressive power,
+ allowing a configuration block to depend on multiple environmental 
+ capabilities implicitly, simplifying the architecture of complex DSLs where components need access to shared services.
+
 \subsection{Kotlin Symbol Processing}
+\label{subsec:ksp}
+
+Usability and readability are critical success factors for any Domain-Specific Language.
+To achieve a high level of usability in the Alchemist DSL, this thesis leverages advanced metaprogramming 
+techniques to generate supporting structures and validation logic automatically.
+A key technology enabling this approach is \textit{Kotlin Symbol Processing} (KSP)~\cite{kspdocs}.
+
+KSP is a compiler plugin API developed by Google that provides a simplified and powerful way to analyze Kotlin code at compile time.
+Unlike traditional Java annotation processors (KAPT), which are tied to the Java programming model and require 
+generating intermediate Java stubs, KSP is designed specifically for Kotlin.
+It allows build tools to parse Kotlin source code,
+ inspect symbols (such as classes, functions, properties, and annotations), and generate new Kotlin code based on this analysis.
+
+The working mechanism of KSP is as follows:
+\begin{enumerate}
+    \item \textbf{Analysis}: The KSP processor runs during the compilation phase, 
+    scanning the user's source code to find specific annotations or code patterns.
+    \item \textbf{Processing}: It builds a model of the code structure (symbol table) 
+    that represents the types, names, and relationships in the codebase.
+    \item \textbf{Generation}: Based on this model, the processor generates new source files 
+    (e.g., extension functions, helper classes, or validation routines) that are automatically 
+    compiled and added to the project's classpath.
+\end{enumerate}
+
+In the context of this thesis, KSP is utilized to bridge the gap between the complex Alchemist core APIs and 
+the user-friendly DSL surface syntax.
+Specifically, it automates the generation of helper functions that wrap existing Alchemist model classes.
+These generated helpers simplify object instantiation by abstracting away the complexity of native constructors, 
+which often require numerous parameters.
+Instead of forcing the user to supply every dependency manually, 
+the generated code automatically detects and injects the necessary parameters from the surrounding DSL context.
+This approach ensures that the DSL remains concise and easy to use while staying in sync with the underlying simulation engine.
+The detailed implementation of this mechanism will be discussed in Chapter~\ref{chap:implementation}.
+
