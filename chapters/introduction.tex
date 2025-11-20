@@ -20,19 +20,24 @@ This leads to frustration, errors, and wasted time.
 This thesis proposes a better way to configure Alchemist simulations.
 Instead of using static text files, a Domain-Specific Language (DSL)-\cite{fowler2010domain} using Kotlin has been developed.
 This allows users to write their configurations as if they were writing code, which brings a lot of benefits.
-Checks are performed while typing, suggestions are provided by the IDE, and the chance of making mistakes is significantly reduced.
+Checks are performed while typing, suggestions are provided by the Integrated Development Environment (IDE), 
+and the chance of making mistakes is significantly reduced.
 The goal is to make the process of setting up a simulation smoother and more reliable, enabling researchers to focus on their experiments 
 rather than fighting with configuration files.
 
 The remainder of this thesis is organized as follows. 
-Section~\ref{sec:context and motivation} details the context and motivation behind this project.
-Chapter~\ref{chap:background} provides background information on Alchemist, including its application domains and use cases.
-Chapter~\ref{chap:analysis} analyzes the requirements and constraints for developing the DSL,
- examining the limitations of the current YAML approach and establishing the domain model. 
-Chapter~\ref{chap:design} presents the design of the DSL, including its architecture and key design decisions. 
-Chapter~\ref{chap:implementation} describes the implementation details and challenges encountered during development. 
-Chapter~\ref{chap:evaluation} evaluates the DSL through tests and comparison with YAML configurations. 
-Finally, Chapter~\ref{chap:conclusion} summarizes the contributions and discusses future work.
+\begin{itemize}
+
+    \item Section~\ref{sec:context-motivation} details the context and motivation behind this project.
+    \item Section~\ref{sec:background} provides background information about the Alchemist simulator and the 
+    concept of Domain-Specific Languages.
+    \item Chapter~\ref{chap:analysis} analyzes the requirements and constraints for developing the DSL,
+    examining the limitations of the current YAML approach and establishing the domain model. 
+    \item Chapter~\ref{chap:design} presents the design of the DSL, including its architecture and key design decisions. 
+    \item Chapter~\ref{chap:implementation} describes the implementation details and challenges encountered during development. 
+    \item Chapter~\ref{chap:evaluation} presents the evaluation of the DSL, detailing the methods and results of the assessments performed.
+    \item Chapter~\ref{chap:conclusion} summarizes the contributions and discusses future work.
+\end{itemize}
 
 \section{Context and Motivation}
 \label{sec:context-motivation}
@@ -87,11 +92,10 @@ commands and operations. An imperative configuration defines
 the procedural \textbf{steps} required to transform the system from its 
 current state to the \textit{target state}. Each command represents an 
 action that modifies system state, and the execution order is 
-critical to achieve the intended outcome. Shell scripts (citation here), 
-deployment automation tools like Ansible (citation here) in its command-based mode 
-and traditional system administration procedures exemplify this approach.
+critical to achieve the intended outcome. Shell scripts and traditional system 
+administration procedures exemplify this approach.
 Another example of an imperative configuration is the \textit{Dockerfile} configuration file:
-Docker is an open platform for developing, shipping, and running applications (citation)
+Docker is an open platform for developing, shipping, and running applications
 A \textit{Dockerfile} is the Docker's imperative configuration 
 format for building container images. 
 It is a text file containing instructions for building source code. 
@@ -281,7 +285,7 @@ Here, class names such as \texttt{Continuous2DEnvironment},
 \texttt{ConnectWithinDistance} and
 \texttt{Rectangle} are specified as plain strings. 
 The application must use reflection or factory patterns to resolve these string class 
-names to actual Java (citation here) or Kotlin (citation here) classes at runtime, 
+names to actual Java or Kotlin classes at runtime, 
 instantiate them with the provided parameters,
  and verify that the constructor signatures match. 
  This approach introduces several critical problems such as:
@@ -293,7 +297,7 @@ instantiate them with the provided parameters,
     \item \textbf{No constructor parameter validation}: The parameters array must match the constructor signature, 
     but this compatibility cannot be checked statically. 
     A mismatch between parameter count, types, or order is discovered only when instantiation fails at runtime.
-    \item \textbf{No type inference or IDE support}: Since class names are strings, Integrated Development Environments (IDEs) (citation here)
+    \item \textbf{No type inference or IDE support}: Since class names are strings, Integrated Development Environments (IDEs)
      cannot provide autocomplete suggestions,
      type-aware parameter hints, or navigation to class definitions.
    \item \textbf{Refactoring}: Renaming a class in the codebase requires manually updating all string references in configuration files,
@@ -306,7 +310,7 @@ The Spring Framework , for instance, allows developers to define beans and their
 configuration files-\cite{beans},
  where class names are specified as strings:
 
-\begin{minted}{xml}
+\begin{minted}[fontsize=\footnotesize]{xml}
 <bean id="item1" class="org.baeldung.store.ItemImpl1" /> 
 <bean id="store" class="org.baeldung.store.Store"> 
     <constructor-arg type="ItemImpl1" index="0" name="item" ref="item1" /> 
@@ -387,7 +391,7 @@ the schema would need to be updated every time a new plugin or extension is deve
 automated tool to generate it. 
 
 Moreover, schemas cannot validate semantic relationships that require understanding the runtime behavior of classes. 
-For instance, schemas cannot ensure that YAML anchor(citation here) references resolve correctly, 
+For instance, schemas cannot ensure that YAML anchor references resolve correctly, 
 that variable dependencies form a valid acyclic graph, or that mathematical expressions in configuration values
  are well-formed and type-safe. 
 These validations require understanding the semantics of the configuration language and the relationships 
@@ -596,7 +600,7 @@ and reusable libraries that can be shared between different projects.
 
 \section{Background}%----------------------------------------------------------------------------------------
 
-\label{chap:background}
+\label{sec:background}
 %----------------------------------------------------------------------------------------
 
 This section provides the background information for this thesis work. 
@@ -654,10 +658,9 @@ while maintaining a consistent conceptual model.
 Figure~\ref{fig:alchemist-metamodel} illustrates the relationships between the main entities of the Alchemist meta-model.
 
 \begin{figure}[htbp]
-\centering
-\includesvg{figures/alchemist-metamodel}
-\caption{The Alchemist meta-model}
-\label{fig:alchemist-metamodel}
+    \makebox[\textwidth][c]{\includesvg[inkscapelatex=false, width=420pt]{figures/meta}}
+    \caption{The Alchemist meta-model}
+    \label{fig:alchemist-metamodel}
 \end{figure}
 
 The meta-model is organized around the following fundamental concepts:
@@ -778,39 +781,63 @@ temporal dynamics, and stochastic interactions play crucial roles.
 \subsection{Domain Specific Languages}
 \label{subsec:dsl}
 
-A Domain-Specific Language (DSL) is a computer programming language of limited expressiveness focused on a particular domain~\cite{fowler2010domain}.
-Unlike General-Purpose Languages (GPLs) such as Java, C++, or Kotlin, which are designed to be applicable across a broad range of application domains, DSLs are specialized tools tailored to a specific problem space.
-The fundamental premise of a DSL is to provide a notation that allows domain experts to express solutions in terms of domain concepts rather than programming constructs.
-By raising the level of abstraction, DSLs enable users to focus on \textit{what} to compute rather than \textit{how} to compute it, bridging the semantic gap between the problem domain and the implementation~\cite{vandeursen2000dsl}.
+A Domain-Specific Language (DSL) is a computer programming language of 
+limited expressiveness focused on a particular domain~\cite{fowler2010domain}.
+Unlike General-Purpose Languages (GPLs) such as Java, C++, or Kotlin, 
+which are designed to be applicable across a broad range of application domains,
+ DSLs are specialized tools tailored to a specific problem space.
+The fundamental premise of a DSL is to provide a notation 
+that allows domain experts to express solutions in terms of domain
+ \emph{concepts} rather than programming constructs.
+By raising the level of abstraction, DSLs enable users to focus on \textit{what} 
+to compute rather than \textit{how} to compute it, 
+bridging the semantic gap between the problem domain and the implementation.
 
 The development and adoption of DSLs are driven by several key advantages.
 First, they offer improved \textbf{productivity} and \textbf{reliability} within their specific domain.
-Because the language constructs align directly with domain concepts, programs written in a DSL are typically more concise and self-documenting than their GPL equivalents.
-This conciseness reduces the cognitive load on developers and minimizes the likelihood of lower-level implementation errors.
-Second, DSLs facilitate better \textbf{communication} between software developers and domain experts.
-A well-designed DSL can serve as a common language that both groups can understand, allowing domain experts to validate or even directly author the logic that drives the system.
-However, these benefits come with trade-offs.
-Designing and implementing a DSL requires significant effort and specialized skills.
-There is also a learning curve associated with any new language, and the tooling support (IDEs, debuggers, testing frameworks) for a custom DSL typically lags behind that of established GPLs unless significant investment is made~\cite{mernik2005when}.
+Because the language constructs align directly with domain concepts, 
+programs written in a DSL are typically more concise and self-documenting 
+than their GPL equivalents.
+This conciseness reduces the cognitive load on developers and minimizes the likelihood 
+of lower-level implementation errors.
+Second, DSLs are concise, can enhance maintainability and they also allow 
+for validation and optimization at the domain level~\cite{vandeursen2000dsl}.
+However, designing and implementing a DSL requires significant effort and specialized skills.
+There is also a learning curve associated with any new language, 
+and the tooling support (IDEs, debuggers, testing frameworks) for a custom DSL 
+typically lags behind that of established GPLs unless significant
+ investment is made~\cite{mernik2005when}.
 
-DSLs are generally classified into two primary categories based on their implementation approach: \textbf{external} and \textbf{internal} DSLs.
+DSLs are generally classified into two primary 
+categories based on their implementation approach: \textbf{external} and \textbf{internal} DSLs.
 
 \subsubsection{External DSLs}
 
-An external DSL is a language that has its own custom syntax and is parsed independently of the host language used to implement 
+An external DSL is a language that has its own custom syntax and is
+ parsed independently of the host language used to implement 
 the application.
-Common examples include SQL for database queries, CSS for styling web pages, and Regular Expressions for text matching.
-Because external DSLs are not constrained by the syntax of an existing programming language, their designers have complete 
+Common examples include SQL for database queries, CSS for styling web pages, 
+and Regular Expressions for text matching.
+Because external DSLs are not constrained by the syntax of an existing programming language,
+ their designers have complete 
 freedom to define a notation that best fits the domain.
-This allows for highly expressive and readable syntaxes that can be optimized for domain experts who may not be programmers.
+This allows for highly expressive and readable
+ syntaxes that can be optimized for domain experts who may not be programmers.
 
-A prevalent subset of external DSLs adopts standard data serialization formats, such as XML, JSON, or YAML, as their concrete syntax.
-In this approach, the DSL designer defines a schema and a set of semantic rules that interpret the data structure as executable logic.
-This strategy eliminates the need to implement a custom lexer and parser, as robust libraries for these formats are available in virtually all programming environments.
-Tools like Ansible (using YAML), Kubernetes (using YAML/JSON), and Maven (using XML) exemplify this pattern.
-However, relying on a generic data format imposes significant constraints: the DSL is limited to the syntactic primitives of the format (e.g., key-value pairs, lists, scalars), often lacking native support for control flow, variables, or type checking.
-As discussed in the context of Alchemist's current configuration, this can lead to verbose files and runtime errors that are
-difficult to diagnose~\cite{fowler2010domain}.
+A prevalent subset of external DSLs adopts standard data serialization formats, 
+such as XML, JSON, or YAML, as their concrete syntax.
+In this approach, the DSL designer defines a schema and a set of semantic rules 
+that interpret the data structure as executable logic.
+This strategy eliminates the need to implement a custom lexer and parser, as robust
+ libraries for these formats are available in virtually all programming environments.
+Tools like Ansible (using YAML), Kubernetes (using YAML/JSON), and Maven (using XML) 
+exemplify this pattern.
+However, relying on a generic data format imposes significant constraints: the DSL is 
+limited to the syntactic primitives of the format (e.g., key-value pairs, lists, scalars),
+ often lacking native support for control flow, variables, or type checking.
+As discussed in the context of Alchemist's current configuration, this can lead 
+to verbose files and runtime errors that are
+difficult to diagnose.
 
 However, for custom external DSLs, the freedom of syntax comes at a cost.
 Implementing a fully custom external DSL requires building a full language infrastructure, including a lexer, parser, 
@@ -822,21 +849,21 @@ support must be built from scratch, which is a non-trivial undertaking.
 
 \subsubsection{Internal DSLs}
 
-An internal DSL (also known as an embedded DSL) is implemented within an existing host General-Purpose Language.
+An internal DSL (also known as an \textit{embedded DSL}) is implemented within an existing host General-Purpose Language.
 It leverages the syntax and semantics of the host language to create a specialized API that feels like a custom language.
-Examples include the Gradle build system (based on Groovy and Kotlin), Ruby on Rails' Active Record, and many testing
- frameworks like ScalaTest or Kotest.
+Examples include the Gradle build system, Ruby on Rails' Active Record-\cite{rubyrecords}, and many testing
+ frameworks like ScalaTest-\cite{scalatest} or Kotest-\cite{kotest}.
 
 Internal DSLs trade syntactic freedom for implementation simplicity and tooling support.
 Since they are valid programs in the host language, they automatically benefit from the existing compiler,
  parser, and tooling ecosystem.
-Users get autocomplete, refactoring, and debugging capabilities "for free".
+Users get autocomplete, refactoring, and debugging capabilities \emph{for free}.
 Interaction with the rest of the application is seamless, as the DSL constructs are simply objects and functions in the host language.
 The primary limitation is that the DSL must conform to the syntax rules of the host language.
 Braces, parentheses, and keyword restrictions of the host language cannot be violated, which may result in a syntax 
 that is slightly more \textit{noisy} than a pure external DSL.
 However, modern languages with flexible syntax features, such as Ruby, Scala, and Kotlin, have made it possible to 
-create internal DSLs that are remarkably clean and expressive~\cite{fowler2010domain}.
+create internal DSLs that are remarkably clean and expressive.
 
 
 In the context of this thesis, the choice of an internal DSL hosted in Kotlin represents a strategic balance since
@@ -853,20 +880,21 @@ creating a unified ecosystem without the need for complex bridge layers or adapt
 \label{subsec:kotlin-dsls}
 
 Kotlin has emerged as a premier language for developing internal DSLs on the JVM, primarily due to its flexible syntax
-and specific language features designed to support type-safe builders~\cite{kotlininaction}.
+and specific language features designed to support type-safe builders~\cite{kotlintypesafebuilders}.
 The language's design philosophy prioritizes readability and conciseness, allowing developers to create APIs that
  closely resemble natural language or declarative specifications.
 This capability has led to the widespread adoption of Kotlin DSLs across the ecosystem.
 Prominent examples include the Gradle Kotlin DSL~\cite{gradleKotlinDSL} for build automation, 
-Ktor~\cite{ktorDSL} for asynchronous web applications, and Jetpack Compose for Android UI development.
+Ktor~\cite{ktor} for asynchronous web applications, and Jetpack Compose~\cite{jetpackcompose} for Android UI development.
 These frameworks demonstrate how Kotlin can transform 
 complex configuration and logic definition tasks into type-safe, readable code structures.
 
-The power of Kotlin for DSL construction rests on several key language mechanisms that work in concert to hide implementation details and expose a clean, declarative surface syntax.
+The power of Kotlin for DSL construction rests on several key language mechanisms 
+that work in concert to hide implementation details and expose a clean, declarative surface syntax.
 
 \subsubsection{Lambdas with Receivers}
 
-The cornerstone of Kotlin DSLs is the concept of \textit{lambdas with receivers}.
+The cornerstone of Kotlin DSLs is the concept of \textit{lambdas with receivers}-\cite{kotlinlambdareceivers}.
 In standard lambda expressions, the context (the \texttt{this} reference) is inherited from the surrounding scope.
 However, Kotlin allows defining a lambda type that has an associated receiver type, denoted as \texttt{ReceiverType.() -> Unit}.
 Inside such a lambda, the client code can call methods of the receiver object directly, without any qualifier.
@@ -874,34 +902,32 @@ This feature enables the creation of hierarchical, builder-style APIs where nest
  in the configuration structure.
 
 \begin{minted}{kotlin}
+class HTML {
+    fun body() { ... }
+}
+
 fun html(init: HTML.() -> Unit): HTML {
-    val html = HTML()
-    html.init()
+    val html = HTML()  // create the receiver object
+    html.init()        // pass the receiver object to the lambda
     return html
 }
 
-html {
-    head {
-        title { +"Kotlin DSL" }
-    }
-    body {
-        p { +"Hello, World!" }
-    }
+html {       // lambda with receiver begins here
+    body()   // calling a method on the receiver object
 }
 \end{minted}
-\captionof{lstlisting}{Example of a simple HTML builder DSL using lambdas with receivers}
+\captionof{lstlisting}{Example of a simple HTML builder DSL}
 
-In this example, the \texttt{head} and \texttt{body} functions are members of the \texttt{HTML} class, 
+In this example, the \texttt{body} function is a member of the \texttt{HTML} class, 
 but they appear as top-level keywords within the \texttt{html} block.
 This mechanism mimics the structure of markup languages while retaining full Turing-complete
  capabilities for variables, loops, and conditionals. 
-By combining lambdas with receivers and the type system, Kotlin enables \textit{type-safe builders}~\cite{typeSafeBuilders}.
-Unlike dynamic builders in languages like Groovy, Kotlin's builders enforce strict scope control.
+By combining lambdas with receivers and the type system, Kotlin enables \textit{type-safe builders}.
 
 \subsubsection{Trailing Lambdas}
 
 Kotlin allows a lambda expression to be moved outside the parentheses if it is the last argument of a function call.
-If the lambda is the \textit{only} argument, the parentheses can be omitted entirely.
+If the lambda is the \textit{only} argument, the parentheses can be omitted entirely-\cite{kotlintrailing}.
 This syntactic sugar is crucial for DSL readability, as it eliminates the visual noise of 
 nested parentheses and makes function calls look like built-in language control structures or blocks.
 
@@ -914,12 +940,12 @@ repeat(3) { index ->
     println("Iteration $index")
 }
 \end{minted}
-\captionof{lstlisting}{Example of trailing lambda syntax making the function call resemble a control structure}
+\captionof{lstlisting}{Example of trailing lambda syntax}
 
 \subsubsection{Extension Functions}
 
 Extension functions allow adding new functionality to existing classes without inheriting 
-from them or using design patterns like Decorator.
+from them or using design patterns like Decorator-\cite{kotlinextension}.
 In the context of DSLs, they enable the augmentation of third-party classes or core library
 types with domain-specific convenience methods, further integrating the DSL vocabulary with the underlying domain model.
 
@@ -935,9 +961,9 @@ environment {
 \end{minted}
 \captionof{lstlisting}{Using extension properties to add domain-specific syntax to primitive types}
 
-\subsubsection{Context Receivers and Context Parameters}
+\subsubsection{Context Parameters}
 
-A recent evolution in Kotlin's design is the introduction of \textit{context parameters}~\cite{contextParameters}.
+A recent evolution in Kotlin's design is the introduction of \textit{context parameters}~\cite{kotlincontextparameters}.
 These features allow functions to declare dependencies on multiple contexts simultaneously, 
 without requiring deeply nested wrapping objects.
 For DSLs, this promises even more expressive power,
@@ -950,13 +976,13 @@ For DSLs, this promises even more expressive power,
 Usability and readability are critical success factors for any Domain-Specific Language.
 To achieve a high level of usability in the Alchemist DSL, this thesis leverages advanced metaprogramming 
 techniques to generate supporting structures and validation logic automatically.
-A key technology enabling this approach is \textit{Kotlin Symbol Processing} (KSP)~\cite{kspdocs}.
+A key technology enabling this approach is \textit{Kotlin Symbol Processing} (KSP)~\cite{ksp}.
 
-KSP is a compiler plugin API developed by Google that provides a simplified and powerful way to analyze Kotlin code at compile time.
-Unlike traditional Java annotation processors (KAPT), which are tied to the Java programming model and require 
-generating intermediate Java stubs, KSP is designed specifically for Kotlin.
+KSP is a compiler plugin API developed by Google that provides a simplified 
+and powerful way to analyze Kotlin code at compile time.
 It allows build tools to parse Kotlin source code,
- inspect symbols (such as classes, functions, properties, and annotations), and generate new Kotlin code based on this analysis.
+ inspect symbols (such as classes, functions, properties, and annotations), 
+ and generate new Kotlin code based on this analysis.
 
 The working mechanism of KSP is as follows:
 \begin{enumerate}
