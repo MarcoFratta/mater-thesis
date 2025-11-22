@@ -3,21 +3,300 @@
 \label{chap:design}
 %----------------------------------------------------------------------------------------
 
+This chapter details the architectural design of the proposed solution. 
+The design follows a layered approach aimed at bridging the gap between the static, type-safe nature of the Kotlin language 
+and the dynamic, reflection-based core of the Alchemist simulator.
+The primary objective is to ensure full semantic equivalence with the existing configuration 
+system while providing the benefits of a modern development environment.
+
 \section{Architecture}
+
+The architectural strategy exploits the capabilities of Kotlin as a General-Purpose Language (GPL)
+ to achieve seamless integration with the existing Alchemist ecosystem.
+The main design decision made is to grant users direct access to the underlying Alchemist codebase. 
+In the legacy YAML configuration system, components are specified via their class names as strings, 
+requiring a complex reflection-based mechanism to resolve and instantiate them at runtime.
+Conversely, the proposed DSL allows users to instantiate these classes directly using standard Kotlin syntax, 
+leveraging the fact that Alchemist components are native Java or Kotlin objects.
+
+This approach eliminates the need for reflective class loading, shifting the responsibility 
+of object instantiation from the framework to the language itself.
+For instance, instantiating a \textit{network model} component becomes a direct constructor call:
+
+\begin{minted}[fontsize=\footnotesize, linenos]{kotlin}
+val networkModel = ConnectWithinDistance(0.5)
+\end{minted}
+
+In contrast, the YAML equivalent requires an indirect specification:
+\begin{minted}[fontsize=\footnotesize, linenos]{yaml}
+network-model:
+  type: ConnectWithinDistance
+  parameters: [0.5]
+\end{minted}
+
+By exposing the underlying API directly, the DSL inherits the type safety and tooling support of the host language. 
+Users are compelled by the compiler to provide correct argument types and counts,
+ transforming what were previously runtime configuration errors into compile-time checks.
+Furthermore, this design ensures immediate compatibility with any future extensions to the Alchemist core,
+ as any new class on the \textit{classpath} is automatically available for use within the DSL 
+ without requiring updates to the parser logic.
+ 
+Given this design decision, the next sections will detail how the new system should
+ integrate with the existing loading system of Alchemist, 
+and will describe the design decision made for the DSL itself.
+
+\subsection{Loading System Integration}
+
+To integrate with the existing Alchemist loading system, 
+the proposed architecture introduces a new implementation of the \textbf{Loader} interface. 
+As established in Section \ref{sec:loadingphase1}, the \textit{Loader} serves as a factory for simulation instances, 
+parameterized by a set of variables that must be used in that specific simulation instance. 
+The core mechanism relies on the method:
+\begin{minted}[fontsize=\footnotesize, linenos]{kotlin}
+fun <T, P : Position<P>> getWith(values: Map<String, *>): Simulation<T, P>
+\end{minted}
+\textbf{}
+It \textbf{instantiates} a simulation by mapping variable names to the given set of specific values. 
+This design decouples the generation of the simulation model from the management of configuration variables, 
+allowing a single \textit{Loader} to generate multiple simulation instances with distinct parameter sets, 
+an important enabler for batch execution.
+
+The execution lifecycle is, instead, managed by the \textbf{Launcher} interface,
+which accepts a \textit{Loader} as a dependency. 
+The \textit{Launcher} is responsible for identifying the \textbf{variable space} (e.g., iterating over a set of parameters) 
+and invoking the \textit{Loader} \texttt{getWith(values: Map<String, \*>)} method to create 
+the corresponding simulation instances. 
+
+\begin{figure}[H]
+    \centering
+    \includesvg[width=\textwidth]{figures/launcherloader}
+    \caption{Loading system architecture}
+    \label{fig:launcherLoader}
+\end{figure}
+
+As shown in the figure \ref{fig:launcherLoader}, the relationship between these components exhibits a bidirectional binding:
+\begin{itemize}
+    \item The \textit{Launcher} depends on the \textit{Loader} to obtain the simulation instance 
+    (via the \texttt{getWith(values: Map<String, *>)} method).
+    \item The \textit{Loader} holds a reference to the specified \textit{Launcher}, since the loader is the component 
+    that holds all the needed information to generate a simulation given the user configuration. The \textit{Launcher} is a 
+    configurable component that can be specified by the user to control the execution of the simulation
+\end{itemize}
+
+
+The loader component is the one that should be actually used to launch the simulation, using its 
+\textit{launch} method:
+
+\begin{minted}[fontsize=\footnotesize, linenos]{kotlin}
+interface Loader {
+    // ...
+    fun launch(launcher: Launcher = this.launcher): Unit = launcher.launch(this)
+}
+\end{minted}
+
+By adhering to this established contract, 
+the new DSL-based implementation achieves full interoperability with the existing ecosystem. 
+It acts as an alternative for the legacy loader, 
+allowing existing \textit{Launcher} implementations to use the new DSL-based loader transparently 
+via the \textit{Inversion of Control} (IoC) pattern.
+Consequently, the complexity of the loading mechanism remains hidden from the user,
+who retains the flexibility to specify custom \textit{Lauchers} without coupling the loader instance 
+to a specific underlying \textit{Loader} implementation.
+
+
 \subsection{Scoped Information Contexts}
-\subsection{Loading System}
+
+To maintain the same semantic as the YAML configuration file and enforce domain rules, 
+the architecture employs a \textit{Scoped Information Context} pattern. 
+The simulation configuration is modeled not as a flat list of properties, but as a 
+hierarchy of \textbf{nested contexts}, 
+mirroring the structural containment of the domain entities.
+
+In this model, the availability of operations and data is strictly determined by the current scope. 
+For instance, the definition of a reaction makes sense only within the context of a node or a global program.
+This design should somehow mimic the nesting levels in the YAML configuration file, but in a more \textit{type-safe} way.
+While the YAML file allows, for example, to define a \textit{Deployment} inside a \textit{Deployment}, the nested context 
+prevents the user to define such a configuration, since at each context level, only the allowed operations and data are available.
+The relationship between the components, as shown in the figure \ref{fig:scoped-contexts}, is the following:
+
+\begin{itemize}
+    \item The \textbf{Simulation Context} is the root context, it contains all the execution settings, 
+    as described in Section \ref{sec:execution-settings}. 
+    \begin{itemize}
+        \item Available elements: \textit{incarnation}, \textit{environment}, \textit{networkModel}, \textit{launcher}, \textit{simulationGenerator}, \textit{scenarioGenerator};
+        \item Available operations: \textit{deployments}, \textit{programs}, \textit{monitors}, \textit{terminators}, \textit{exporter},
+        \textit{layer}, \textit{variable}
+    \end{itemize}
+
+    \item The \textbf{Deployments Context} handles the creation of node deployments.
+    \begin{itemize}
+        \item Available elements: \textit{generator};
+        \item Available operations: \textit{deploy}
+    \end{itemize}
+
+    \item The \textbf{Deployment Context} configures a specific deployment instance.
+    \begin{itemize}
+        \item Available elements: -;
+        \item Available operations: \textit{all}, \textit{inside}, \textit{programs}, \textit{nodes}, \textit{properties}
+    \end{itemize}
+
+    \item The \textbf{Content Context} defines the molecules and concentrations for nodes.
+    \begin{itemize}
+        \item Available elements: \textit{filter}, \textit{molecule}, \textit{concentration};
+        \item Available operations: -
+    \end{itemize}
+
+    \item The \textbf{Programs Context} manages the reaction programs for nodes.
+    \begin{itemize}
+        \item Available elements: -;
+        \item Available operations: \textit{all}, \textit{inside}
+    \end{itemize}
+
+    \item The \textbf{Program Context} specifies the details of a reaction.
+    \begin{itemize}
+        \item Available elements: \textit{node}, \textit{program}, \textit{timeDistribution}, \textit{reaction};
+        \item Available operations: \textit{timeDistribution}, \textit{addAction}, \textit{addCondition}
+    \end{itemize}
+
+    \item The \textbf{Properties Context} manages node properties.
+    \begin{itemize}
+        \item Available elements: -;
+        \item Available operations: \textit{all}, \textit{inside}
+    \end{itemize}
+
+    \item The \textbf{Property Context} assigns properties to nodes.
+    \begin{itemize}
+        \item Available elements: \textit{filter}, \textit{node};
+        \item Available operations: \textit{add}
+    \end{itemize}
+
+    \item The \textbf{Exporter Context} configures data export.
+    \begin{itemize}
+        \item Available elements: \textit{type};
+        \item Available operations: \textit{data}
+    \end{itemize}
+
+    \item The \textbf{Layer Context} defines spatial layers.
+    \begin{itemize}
+        \item Available elements: \textit{molecule}, \textit{layer};
+        \item Available operations: -
+    \end{itemize}
+
+    \item The \textbf{Terminators Context}, \textit{Output Monitors Context}, and \textit{Global Programs Context} allow adding respective components.
+    \begin{itemize}
+        \item Available elements: -;
+        \item Available operations: \textit{add} 
+    \end{itemize}
+\end{itemize}
+
+This hierarchical design has been extracted from the Alchemist YAML specification, 
+and it is a direct translation of the YAML hierarchy into the DSL, with some minor syntax 
+changes.
+
+\begin{figure}[H]
+    \centering
+    \includesvg[width=\textwidth]{figures/contexts}
+    \caption{Scoped Information Contexts diagram}\label{fig:scoped-contexts}
+\end{figure}
+
+This hierarchical design serves two purposes:
+\begin{enumerate}
+    \item \textbf{Scope Containment}: It prevents structural inconsistencies by restricting the visibility of methods.
+     A user cannot accidentally define a deployment inside a deployment because the \textit{Deployment Context} 
+     does not expose the API for deployments creation.
+    \item \textbf{Context Awareness}: Inner scopes transparently inherit relevant information from outer scopes. 
+    A node definition context automatically has access to the environment type defined in the parent scope, 
+    eliminating the need for redundant type specifications.
+\end{enumerate}
+
 \section{Detailed Design}
-\subsection{Task-Based System}
-\subsection{DSL Builder Structure}
+
+This section delves into the internal mechanisms 
+that enable the DSL to function as a configuration template for multiple simulation runs.
+
+\subsection{Deferred Execution Model}
+
+A critical requirement for the Alchemist simulator is the support for \textit{batch executions}, 
+where a single configuration file generates multiple simulation instances with varying parameters. 
+A naive implementation of the DSL might instantiate the simulation objects immediately during script execution. 
+However, this would bind the simulation to a single set of values, breaking the batching requirement.
+
+To address this, the design adopts a \textbf{Lazy Evaluation} model, essentially a variation of the 
+\textit{Command Pattern}\footnote{\url{https://archive.is/vwOm2}}. 
+When the DSL script is executed, it does not construct the simulation entities (nodes, deployments, reactions) directly. 
+Instead, it records a sequence of "build tasks" or specifications. This already happens in the current YAML loader, 
+where the simulation model is actually built only when the \texttt{getWith()} method,  of the loader, is invoked.
 
 
+The process is divided into two distinct phases:
+\begin{enumerate}
+    \item \textbf{Definition Phase}: The script runs once. 
+    It builds an internal representation of the user's intent, a recipe for how to build the simulation. 
+    Each DSL operation is stored as a \textbf{build step}, that will be later executed to modify the simulation model.
+    During this phase, variables are treated as symbolic references rather than concrete values. In this phase, the 
+    variables must not be accessed, since they are not yet assigned any value. This phase should produce 
+    an \textbf{SimulationContext} instance that stores all the needed information to 
+    later allow the DSL loader component to materialize the simulation model, 
+    given the variable values for the current run. This \textit{SimulationContext} instance should be considered as the \textit{recipe}
+    of the simulation, that will later be used to materialize the simulation model.
+    \item \textbf{Materialization Phase}: This occurs repeatedly, once for each simulation in a batch. 
+    The \textit{DSL Loader} invokes the recorded build tasks of the given \textit{SimulationContext} instance 
+    after injecting the specific variable values (the \textit{grounding}) 
+    for the current run.
+\end{enumerate}
+
+\begin{figure}[H]
+    \centering
+    \includesvg[width=0.5\textwidth]{figures/lazyeval}
+    \caption{Lazy Evaluation model diagram}\label{fig:lazyeval}
+\end{figure}
 
 
+Since the user should be able to reference variables in the DSL, the lazy evaluation design prevents
+the DSL execution to access variables values that are not yet assigned by the launcher. Suppose the DSL 
+script is directly executed during its evaluation phase, the variables would be accessed before they are assigned
+any values. Moreover, directly executing the DSL script would require to re-execute 
+the script for each simulation in the batch. 
 
 
+This separation of concerns ensures that the computational overhead of evaluating the script is paid only once,
+ while the lightweight \textit{materialization phase} can be repeated efficiently for a batch of independent runs.
 
+\subsection{Variables Management}
 
+One of the primary challenges in adapting a General-Purpose Language for simulation configuration is the handling
+of variable state across batch executions.
+In a standard imperative program, variable assignment is immediate and bound to the current execution scope.
+However, the Alchemist batch execution model requires the same configuration logic to be re-evaluated against 
+a changing set of parameters. 
+If variables were resolved at the time of script definition, 
+the simulation would be bound to a single static configuration, negating the purpose of the batch mechanism.
 
+To address this, the proposed design abstracts the concept of a variable from a direct value holder 
+to a \textbf{reference} to a certain value in a \textbf{variables' registry}. 
+Leveraging the semantic capabilities of the host language, 
+variables defined in the DSL do not store data directly. 
+Instead, they function as keys that query a centralized \textit{Variables Context}, a scoped container responsible
+for managing the state of the simulation parameters.
 
+Under this paradigm, the declaration of a variable registers the identifier within
+ the context but defers value resolution. 
+ The actual binding of values occurs solely during the \textit{materialization phase} described in the previous section. 
+ When the \textit{Loader} prepares a specific simulation instance, 
+ it populates the \textit{Variables Context} with the distinct combination of parameters assigned to that run.
+Consequently, when the DSL logic subsequently accesses the variable, the request is fetched from the \textit{Variables Context}.
 
+This architecture effectively decouples the definition of the simulation structure from the data that drives it.
+It ensures that the same compilation of the DSL script can support an arbitrary number of execution instances,
+ each perceiving a unique, consistent view of the variable space. 
+Figure \ref{fig:variable-proxy} shows this interaction.
 
+\begin{figure}[H]
+    \centering
+    \includesvg[width=0.4\textwidth]{figures/variablesdesign}
+    \caption{Variables Context design diagram}
+    \label{fig:variable-proxy}
+\end{figure}
+
+The low-level details of this mechanism,
+particularly the integration with Kotlin language features, are provided in the Implementation chapter.

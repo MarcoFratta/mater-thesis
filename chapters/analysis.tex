@@ -357,6 +357,7 @@ where multiple simulations must be generated from a single
 configuration template with varying parameter values.
 
 \paragraph{Loader Construction Phase}
+\label{sec:loadingphase1}
 The loading process begins when a configuration 
 file is parsed into an internal \textit{map-based} representation. 
 The system then enters the \textbf{Loader creation phase}, 
@@ -399,7 +400,7 @@ This phase performs several critical operations:
 \end{itemize}
 
 \begin{figure}[H]
-    \makebox[\textwidth][c]{\includegraphics[width=500pt]{figures/loadingphase1}}
+    \makebox[\textwidth][c]{\includesvg[width=\textwidth]{figures/loadingphase1}}
     \caption{The Loader Creation phase diagram}
     \label{fig:loadingphase1}
 \end{figure}
@@ -471,7 +472,7 @@ the internal wiring of the simulation components.
 \end{itemize}
 
 \begin{figure}[H]
-    \makebox[\textwidth][c]{\includegraphics[width=550pt]{figures/loadingphase2}}
+    \makebox[\textwidth][c]{\includesvg[width=\textwidth]{figures/loadingphase2}}
     \caption{The Simulation Instantiation phase diagram}
     \label{fig:loadingphase2}
 \end{figure}
@@ -589,7 +590,7 @@ The DSL must provide mechanisms to declare these variables and use them transpar
 ensuring that type safety is maintained even when values are not known until runtime.
 
 \subsection{Execution Settings}
-
+\label{sec:execution-settings}
 This part of the domain model configures \textit{how} the simulation is executed and observed, rather than \textit{what} is simulated.
 It includes:
 \begin{itemize}
