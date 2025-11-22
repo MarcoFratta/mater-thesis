@@ -3,11 +3,17 @@
 \label{chap:design}
 %----------------------------------------------------------------------------------------
 
-This chapter details the architectural design of the proposed solution. 
-The design follows a layered approach aimed at bridging the gap between the static, type-safe nature of the Kotlin language 
-and the dynamic, reflection-based core of the Alchemist simulator.
-The primary objective is to ensure full semantic equivalence with the existing configuration 
-system while providing the benefits of a modern development environment.
+This chapter outlines the architectural design of the Kotlin DSL for Alchemist. 
+The proposed solution aims to reconcile the static type safety of the host language with the dynamic requirements of the simulator,
+ specifically the need for arbitrary class loading and batch execution.
+
+The design process focused on three key areas. 
+\begin{itemize}
+    \item \textbf{Component Instantiation}: The architecture shifts the responsibility of component instantiation 
+    from the framework's reflection mechanism to the language itself, allowing for direct usage of Alchemist APIs.
+    \item \textbf{Context System}: A hierarchical context system is introduced to enforce domain rules and structural correctness at compile time, mirroring the containment logic of the simulation model.
+    \item \textbf{Deferred Execution}: A deferred execution strategy is employed to support parametric simulations, ensuring that a single script definition can generate multiple independent simulation instances.
+\end{itemize}
 
 \section{Architecture}
 
@@ -36,11 +42,11 @@ network-model:
 
 By exposing the underlying API directly, the DSL inherits the type safety and tooling support of the host language. 
 Users are compelled by the compiler to provide correct argument types and counts,
- transforming what were previously runtime configuration errors into compile-time checks.
+transforming what were previously runtime configuration errors into compile-time checks.
 Furthermore, this design ensures immediate compatibility with any future extensions to the Alchemist core,
- as any new class on the \textit{classpath} is automatically available for use within the DSL 
- without requiring updates to the parser logic.
- 
+as any new class on the \textit{classpath} is automatically available for use within the DSL 
+without requiring updates to the parser logic.
+
 Given this design decision, the next sections will detail how the new system should
  integrate with the existing loading system of Alchemist, 
 and will describe the design decision made for the DSL itself.
@@ -69,7 +75,7 @@ the corresponding simulation instances.
 
 \begin{figure}[H]
     \centering
-    \includesvg[width=\textwidth]{figures/launcherloader}
+    \includegraphics[width=\textwidth]{figures/launcherloader.pdf}
     \caption{Loading system architecture}
     \label{fig:launcherLoader}
 \end{figure}
@@ -195,7 +201,7 @@ changes.
 
 \begin{figure}[H]
     \centering
-    \includesvg[width=\textwidth]{figures/contexts}
+    \includegraphics[width=\textwidth]{figures/contexts.pdf}
     \caption{Scoped Information Contexts diagram}\label{fig:scoped-contexts}
 \end{figure}
 
@@ -211,8 +217,14 @@ This hierarchical design serves two purposes:
 
 \section{Detailed Design}
 
-This section delves into the internal mechanisms 
-that enable the DSL to function as a configuration template for multiple simulation runs.
+This section details the design choices and mechanisms that enable the DSL to function as a flexible configuration template,
+ capable of supporting multiple simulation runs with varying parameters. 
+
+To achieve this goal, the design addresses two fundamental challenges:
+\begin{itemize}
+    \item \textbf{Deferred Execution}: preventing immediate instantiation of simulation components to allow for parametric configuration across batch runs.
+    \item \textbf{Variable Management}: abstracting variables from direct values to contextual references, ensuring that the same script can be re-evaluated with different parameter sets.
+\end{itemize}
 
 \subsection{Deferred Execution Model}
 
@@ -247,7 +259,7 @@ The process is divided into two distinct phases:
 
 \begin{figure}[H]
     \centering
-    \includesvg[width=0.5\textwidth]{figures/lazyeval}
+    \includegraphics[width=0.5\textwidth]{figures/lazyeval.pdf}
     \caption{Lazy Evaluation model diagram}\label{fig:lazyeval}
 \end{figure}
 
@@ -293,7 +305,7 @@ Figure \ref{fig:variable-proxy} shows this interaction.
 
 \begin{figure}[H]
     \centering
-    \includesvg[width=0.4\textwidth]{figures/variablesdesign}
+    \includegraphics[width=0.4\textwidth]{figures/variablesdesign.pdf}
     \caption{Variables Context design diagram}
     \label{fig:variable-proxy}
 \end{figure}
