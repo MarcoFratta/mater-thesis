@@ -4,7 +4,7 @@
 %----------------------------------------------------------------------------------------
 
 This chapter analyzes the problem of developing a \textbf{type-safe}
-Domain-Specific Language for Alchemist simulations configuration. 
+Domain-Specific Language for Alchemist simulation configuration. 
 The analysis establishes the foundation for the design 
 and implementation phases by identifying
 requirements, constraints, and the domain model underlying the simulation configuration.
@@ -33,7 +33,7 @@ overall developer experience and productivity:
 the DSL can provide compile-time type and syntax checking, enabling early detection of configuration errors before simulation execution.
 Moreover, the \textit{Integrated Development Environment} (IDE) support, including autocomplete and inline documentation, 
 should reduce the learning curve and improve productivity when creating simulation configurations. 
-The user can leverage the IDE to focus on the simulation configuration and less on the language syntax.
+The user can leverage the IDE to focus on the simulation configuration rather than on the language syntax.
 
 The \textbf{second goal} concerns compatibility and integration. 
 The DSL must integrate seamlessly with Alchemist's existing loading infrastructure, 
@@ -43,13 +43,13 @@ This ensures that simulations configured via the DSL behave identically to their
 
 The \textbf{third goal} focuses on expressiveness and maintainability. 
 The DSL should provide a natural, domain-appropriate syntax that makes simulation configurations more readable and maintainable 
-than their YAML equivalents. However, the DSL should have the same semantic as the YAML configuration, 
-allowing the user to leverage their existing knowledge of YAML to configure simulations. Moreover, the DSL, 
+than their YAML equivalents. However, the DSL should have the same semantics as the YAML configuration, 
+allowing the user to leverage their existing knowledge of YAML to configure simulations. Moreover, the DSL 
 should be open to extensions and should be able to support new features or new incarnations as they are developed, without 
 the need to modify the DSL itself.
 
 
-Next sections will analyze, in more detail, the constraints and functional requirements that the DSL must satisfy.
+The next sections will analyze, in more detail, the constraints and functional requirements that the DSL must satisfy.
 \section{Constraints}
 
 Constraints define \textbf{limitations} and \textbf{conditions} that the DSL solution must satisfy, 
@@ -59,7 +59,7 @@ These constraints arise from the need to integrate with existing systems and com
 
 Two primary constraint categories affect the DSL design:
 \begin{itemize}
-    \item \textbf{Backward compatibility}: ensures that the DSL integrates with Alchemist's 
+    \item \textbf{Backward compatibility}: ensuring that the DSL integrates with Alchemist's 
     existing configuration system without breaking existing functionality. 
     \item \textbf{Language constraints}: the Kotlin language syntax and the available tooling capabilities 
     limit the implementation choices. 
@@ -71,12 +71,12 @@ These two constraints will be analyzed in more detail in the next sections.
 The backward compatibility constraint ensures that the DSL integrates with Alchemist's 
 existing configuration system without breaking existing functionality. 
 This constraint is crucial to ensure that the YAML configuration files can still be used to configure simulations, 
-even after the DSL is adopted. The Kotlin DSL should be an \textbf{alternative} to YAML configuration format, not a replacement.
+even after the DSL is adopted. The Kotlin DSL should be an \textbf{alternative} to the YAML configuration format, not a replacement.
 At the same time, the DSL should support all the existing YAML features and should be able to generate 
 the same simulation model as the YAML configuration.
 
 The development of the Kotlin DSL should not require any changes to the existing YAML configuration files.
-The same is true for the\textit{ loading system }of Alchemist: 
+The same is true for the \textit{loading system} of Alchemist: 
 it should be able to load both YAML and Kotlin DSL configuration files. 
 The actual system should be extended but not replaced. 
 
@@ -118,8 +118,8 @@ The YAML equivalence functional requirement ensures that the DSL can express all
 representable in YAML and produces \textbf{identical} simulation models. 
 Since it is assumed that the current YAML configuration system is working correctly,
 it can be used as a reference to ensure that the DSL can produce the same simulation model. 
-The Alchemist YAML specification can be used as a reference to define the semantic of the DSL, since we want 
-the DSL to have the same semantic as the YAML configuration. 
+The Alchemist YAML specification can be used as a reference to define the semantics of the DSL, since we want 
+the DSL to have the same semantics as the YAML configuration. 
 The user should be, in theory, able to convert an existing YAML configuration file to a DSL configuration file and vice versa, 
 and the two configurations should produce the same simulation model. Moreover, a user should expect 
 to find in the DSL configuration system all the features of the YAML configuration system.
@@ -129,10 +129,8 @@ to find in the DSL configuration system all the features of the YAML configurati
 The loading system requirements mandate integration with Alchemist's existing configuration 
 loading infrastructure, enabling the DSL to work alongside YAML configurations.
 The loading system should be able to load both YAML and Kotlin DSL configuration files. 
-Currently, the loading system is able to load the simulation model from the YAML configuration file that is a
-file with a \textit{.yaml} extension.
-The loading system should be extended to be able to support also the new Kotlin DSL configuration file that is a
-file with a \textit{.kts} extension. 
+Currently, the loading system is able to load the simulation model from YAML configuration files with a \textit{.yaml} extension.
+The loading system should be extended to also support the new Kotlin DSL configuration files with a \textit{.kts} extension. 
 \begin{itemize}
     \item \textbf{Via Gradle}
     \item \textbf{Via Standalone Application}
@@ -235,7 +233,7 @@ are essential to guide the user through the configuration process,
 
 \subsection{Extensibility}
 
-Extensibility is a another fundamental quality attribute for the Alchemist DSL, 
+Extensibility is another fundamental quality attribute for the Alchemist DSL, 
 given the framework's nature as a general-purpose simulator.
 Alchemist is designed to be extended: users can define new \textit{incarnations}, 
 implement custom \textit{reactions}, create specialized \textit{environments}, 
@@ -275,7 +273,7 @@ bridging the gap between Alchemist's dynamic class loading and Kotlin's static t
 \subsection{Performance}
 
 In the context of this thesis, the performance requirement specifically refers to the efficiency 
-of the \textbf{loading module} of Alchemist, that is the module responsible for the parsing of the configuration 
+of the \textbf{loading module} of Alchemist, which is the module responsible for the parsing of the configuration 
 and the instantiation of the simulation model.
 It is important to clarify that this requirement does not concern the runtime execution speed of the Alchemist simulation engine itself, 
 as the internal simulation logic remains independent of the configuration format used.
@@ -337,7 +335,7 @@ Given the trade-offs involved, the analysis establishes the following hierarchy 
      However, the system must not prevent valid configurations that are possible in YAML.
     \item \textbf{User Experience}: IDE support (autocompletion, documentation) is a core value proposition. 
     Features that enhance the developer experience are prioritized over implementation simplicity.
-    \item \textbf{Performance}: As stated before, while the loading time should be reasonable, 
+    \item \textbf{Performance}: As stated earlier, while the loading time should be reasonable, 
     the runtime performance of the simulation is less important. 
     The loading phase can tolerate a slight overhead if it buys significant safety and usability gains.
 \end{enumerate}
@@ -424,14 +422,14 @@ template along with metadata about variables, constants, and execution parameter
 \end{minted}
 \captionof{lstlisting}{Loader interface}
 
-This loader serves as a factory for generating simulation instances. A Simulation can be generated by either
-using the \textit{getDefault()} method, that will assign to each variable its default value, or by using the  
-\textit{getWith()} method, that will assign to each variable the value provided in the map.
+This loader serves as a factory for generating simulation instances. A Simulation can be generated either by
+using the \textit{getDefault()} method, which will assign to each variable its default value, or by using the  
+\textit{getWith()} method, which will assign to each variable the value provided in the map.
 
 \paragraph{Simulation Instantiation Phase}
-This phase occurs when \texttt{getDefault()} or \texttt{getWith()} is invoked with a map of variable values, that
+This phase occurs when \texttt{getDefault()} or \texttt{getWith()} is invoked with a map of variable values, which
 represents the actual parameter values for that simulation instance.
-So for each batch run, the getWith() method of the loader must be invoked.
+For each batch run, the getWith() method of the loader must be invoked.
 This phase transforms the configuration template into an executable simulation model through the following steps:
 
 \begin{itemize}
@@ -480,7 +478,7 @@ the internal wiring of the simulation components.
 
 This \textit{two-phase} loading system architecture provides several advantages:
 \begin{enumerate}
-    \item \textbf{Efficient batch execution}: a single loader can generate multiple simulation instances with different parameter
+    \item \textbf{Efficient batch execution}: A single loader can generate multiple simulation instances with different parameter
     combinations without re-parsing the configuration. 
     \item \textbf{Parameter space exploration}: by using custom launchers, the user can systematically vary 
     free variables across simulation runs.
@@ -548,7 +546,7 @@ interface Loader : Serializable {
 The \texttt{Loader} object holds the simulation template (variables, deployments, etc.) but does not carry the \texttt{<T, P>}
  type information at the class level. 
 The types $T, P$ are only introduced when the \texttt{getWith} method is invoked to instantiate the simulation, 
-but there is no guarantee that the method types $T, P$ are the same as the types $T, P$ of the Simulation Object.
+but there is no guarantee that the method types $T, P$ are the same as the types $T, P$ of the simulation object.
 This implies that the internal representation of the simulation components within the \texttt{Loader} effectively
 erases or hides their specific generic types.
 Calling the \texttt{getWith()} method with different types $T, P$ will not result in different simulation models, since

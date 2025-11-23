@@ -120,7 +120,7 @@ In this example, each \texttt{RUN}, \texttt{COPY}, and \texttt{CMD} instruction 
  a step that modifies the container image state, 
  and the sequence must be carefully ordered 
  (e.g., installing packages before executing files that depend on them). 
- Docker then, builds images by reading the instructions from a Dockerfile.
+ Docker then builds images by reading the instructions from a Dockerfile.
 
 In contrast, the declarative configuration paradigm focuses 
 on specifying \textbf{what} the desired system state should be,
@@ -192,7 +192,7 @@ networks, load balancers, databases, and access policies, using a unified config
 
 \item \textbf{Container Orchestration}:
 Kubernetes represents perhaps the purest expression of declarative configuration in modern infrastructure.
- The Kubernetes API defines a comprehensive schema of resource type such as 
+ The Kubernetes API defines a comprehensive schema of resource types such as 
  Pods, Services, Deployments, ConfigMaps, Secrets, and dozens of others,
  Users express desired states through YAML or JSON manifests, and Kubernetes controllers
   continuously reconcile actual cluster state with declared specifications.
@@ -219,7 +219,7 @@ These systems, while addressing distinct domains, share common architectural pat
     is the abstract model of the configuration system.
     \item{\textbf{Concrete syntax}}: provides a human-readable, version-controllable format for expressing configurations,
     supporting necessary abstraction, parameterization, and composition. Some systems, like Gradle and Terraform, 
-    provide a domain-specific languages with built-in
+    provide domain-specific languages with built-in
     abstraction primitives such as modules, variables, and iteration constructs. Others, like Kubernetes,
      define a pure data format (JSON/YAML). Different concrete syntaxes can target the same underlying resource schema.
     \item{\textbf{Configuration management engine}}: it is responsible for determining a valid sequence 
@@ -431,8 +431,8 @@ Alchemist, could benefit from this by being able
 
 The limitations of JSON and YAML formats become particularly pronounced when configuring complex 
 scenarios such as scientific simulations and experimental configurations. 
-Expressing complex scenarios in YAML results in very long files that tends to 
-grow more vertically rather then horizontally, (see listing~\ref{lst:examplecomplexsimulation}), where the  
+Expressing complex scenarios in YAML results in very long files that tend to 
+grow more vertically rather than horizontally (see listing~\ref{lst:examplecomplexsimulation}), where the  
 semantic relationships between configuration elements are obscured by syntactic boilerplate. 
 
 \begin{center}
@@ -530,7 +530,7 @@ For example, a Spring Boot beans configuration XML file might specify a class na
 \end{minted}
 \captionof{lstlisting}{Example of a wrong Spring XML configuration}
 
-The YAML parser will accept this configuration as valid, since \texttt{NonExistentClass} 
+The XML parser will accept this configuration as valid, since \texttt{NonExistentClass} 
 is a perfectly valid string. The error will only surface when the application attempts to instantiate 
 the class at runtime.
 \begin{minted}[
@@ -562,7 +562,7 @@ process even more costly and frustrating.
 
 \subsection{The Need for a Type-Safe Configuration Language}
 Recent configuration languages demonstrate that declarativity can coexist with type safety and tooling support. 
-Configuration tools like CUE\footnote{\url{https://cuelang.org/docs/}} unifies data, schemas, and policies inside a single constraint system, 
+Configuration tools like CUE\footnote{\url{https://cuelang.org/docs/}} unify data, schemas, and policies inside a single constraint system, 
 enabling incremental validation,
 order-independent unification, and reusable templates that reduce boilerplate.
 Dhall\footnote{\url{https://docs.dhall-lang.org}} delivers a total, strongly typed language whose expressions normalize 
@@ -722,7 +722,7 @@ The meta-model is organized around the following fundamental concepts:
     \end{itemize}
 
 As previously noted, the framework includes several built-in \textit{incarnations}, each tailored to specific application domains.
-Each incarnation defines type systems for concentrations and specialize the framework for specific domains.
+Each incarnation defines type systems for concentrations and specializes the framework for specific domains.
 It provides a concrete instantiation of the Alchemist meta-model by specifying the data 
 types that concentrations can assume and providing domain-specific conditions, actions, environments, 
 and reactions that operate on those types. 
@@ -746,12 +746,12 @@ Some of the built-in incarnations are:
 
 This incarnation-based architecture enables a unified simulation engine 
 to support multiple modeling paradigms while 
-allowing researchers to extend the framework with custom incarnations for specialized domains. .
+allowing researchers to extend the framework with custom incarnations for specialized domains.
 
 \subsubsection{Application Domains}
 
 Alchemist has been employed to simulate complex scenarios across multiple domains, 
-demonstrating the framework's versatility and effectiveness, some of them are:
+demonstrating the framework's versatility and effectiveness. Some of them are:
 
 \begin{itemize}
     \item \textbf{Biochemical reaction networks}: Modeling the dynamics of chemical reactions in biological systems,
@@ -773,8 +773,8 @@ demonstrating the framework's versatility and effectiveness, some of them are:
     The framework enables the study of how local interactions give rise to coordinated swarm behaviors~\cite{swarmprogramming}.
 \end{itemize}
 
-These diverse applications demonstrate Alchemist's capability to model complex systems
-scenarios where spatial distribution,
+These diverse applications demonstrate Alchemist's capability to model complex scenarios
+where spatial distribution,
 temporal dynamics, and stochastic interactions play crucial roles. 
 
 \subsection{Domain Specific Languages}
@@ -799,7 +799,7 @@ programs written in a DSL are typically more concise and self-documenting
 than their GPL equivalents.
 This conciseness reduces the cognitive load on developers and minimizes the likelihood 
 of lower-level implementation errors.
-Second, DSLs are concise, can enhance maintainability and they also allow 
+Second, DSLs are concise, can enhance maintainability, and they also allow 
 for validation and optimization at the domain level~\cite{vandeursen2000dsl}.
 However, designing and implementing a DSL requires significant effort and specialized skills.
 There is also a learning curve associated with any new language, 
@@ -919,7 +919,7 @@ html {       // lambda with receiver begins here
 \captionof{lstlisting}{Example of a simple HTML builder DSL}
 
 In this example, the \texttt{body} function is a member of the \texttt{HTML} class, 
-but they appear as top-level keywords within the \texttt{html} block.
+but it appears as a top-level keyword within the \texttt{html} block.
 This mechanism mimics the structure of markup languages while retaining full Turing-complete
  capabilities for variables, loops, and conditionals. 
 By combining lambdas with receivers and the type system, Kotlin enables \textit{type-safe builders}.
@@ -964,7 +964,7 @@ environment {
 \subsubsection{Context Parameters}
 
 A recent evolution in Kotlin's design is the introduction of \textit{context parameters}\footnote{\url{https://kotlinlang.org/docs/context-parameters.html}}.
-These features allow functions to declare dependencies on multiple contexts simultaneously, 
+This feature allows functions to declare dependencies on multiple contexts simultaneously, 
 without requiring deeply nested wrapping objects.
 For DSLs, this promises even more expressive power,
  allowing a configuration block to depend on multiple environmental 

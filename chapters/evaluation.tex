@@ -3,18 +3,110 @@
 \label{chap:evaluation}
 %----------------------------------------------------------------------------------------
 
-\section{Testing}
+The evaluation of the Alchemist DSL focuses on verifying that the solution meets the functional and non-functional requirements outlined in Chapter \ref{chap:analysis}. 
+The assessment is divided into two main parts: a technical validation through a comprehensive testing strategy, and a qualitative discussion on the benefits introduced by the new system.
+
+\section{Testing Strategy}
+\label{sec:testing}
+
+The testing process was designed to ensure correctness, equivalence with the legacy system, and performance stability. 
+The strategy followed a multi-layered approach, starting from the unit testing of individual DSL components,
+ proceeding to the structural validation of the generated simulation models, and concluding with runtime behavior comparison.
+
 \subsection{Unit Testing}
-\subsection{Integration Testing}
-\subsection{DSL Equivalence Testing} %TODO: Add subsection for structural and behavioral equivalence testing
+\label{subsec:unit-testing}
+
+The foundation of the evaluation is a rigorous unit testing suite designed to verify the correctness of individual DSL constructs in isolation. 
+Given the hierarchical nature of the configuration domain and the complexity of the underlying Alchemist model, an \textbf{incremental testing strategy} was adopted. 
+This "bottom-up" approach allowed for the validation of specific features—such as variable delegation, context scoping, and entity instantiation—before integrating them into
+ complete simulation definitions.
+
+\subsubsection{Incremental DSL Validation}
+
+The unit tests mirror the modular structure of the DSL implementation. Rather than exclusively testing full configuration files, the suite breaks down the verification into specific areas of concern:
+
+\begin{itemize}
+    \item \textbf{Core Structure and Contexts}: Initial tests verified the correct instantiation of the root \texttt{SimulationContext} and the propagation of generic types ($T, P$). 
+    Tests such as \texttt{TestSimulations} ensured that the \texttt{simulation} block correctly
+     initialized the loader with the specified \texttt{Incarnation} and \texttt{NetworkModel}, 
+     verifying that the fundamental building blocks of the simulation were correctly set up.
+
+    \item \textbf{Deployments Context}: The \texttt{TestDeployments} suite focused on the \texttt{deployments} context, 
+    verifying that geometric descriptors (such as \texttt{Point}, \texttt{Circle}, and \texttt{Grid}) were correctly instantiated and added to the simulation recipe. 
+    These tests confirmed that the DSL syntax for spatial definition mapped correctly to the corresponding Alchemist `Deployment` objects.
+
+    \item \textbf{Variable Delegation Logic}: A critical aspect of the DSL is the deferred execution model managed by the \texttt{VariablesContext}. 
+    The \texttt{TestVariables} suite validated the custom property delegation mechanism described in Section \ref{sec:impl-variables}. 
+    Specifically, it verified that:
+    \begin{enumerate}
+        \item Variables correctly registered their default values upon declaration.
+        \item The `getWith()` method of the Loader correctly injected new values, overriding defaults.
+        \item Dependent variables (defined via lambdas) correctly resolved their dependencies at runtime.
+        \item Invalid access patterns (e.g., circular dependencies or access before initialization) were handled gracefully or threw appropriate exceptions.
+    \end{enumerate}
+\end{itemize}
+
+\subsubsection{Processor Verification}
+
+In addition to the runtime library, the Kotlin Symbol Processing (KSP) component (described in Section \ref{sec:ksp-implementation}) required a dedicated testing strategy. 
+Since the processor is responsible for generating the bridge code that makes the DSL usable, its correctness is paramount to the user experience.
+
+The unit testing for the processor involved the compilation of synthetic Kotlin sources annotated with \texttt{@BuildDsl}. 
+The tests asserted that the processor:
+\begin{itemize}
+    \item Correctly identified the primary constructors of annotated classes.
+    \item Accurately distinguished between user-configurable parameters and system-injectable dependencies (e.g., \texttt{Environment}, \texttt{RandomGenerator}).
+    \item Generated factory functions with the correct signature, including appropriate context receivers and generic constraints.
+    \item Correctly synthesized the accessor paths (e.g., mapping a request for `Environment` to the correct parent context property) to solve the context chaining problem.
+\end{itemize}
+
+\subsection{Equivalence Testing}
+\label{subsec:equivalence-testing}
+
+To demonstrate compliance with the \textbf{YAML equivalence} requirement, a comprehensive integration test suite was developed. 
+The objective was to prove that for any valid YAML configuration, a semantically identical DSL script exists and produces an indistinguishable simulation model.
+This verification relies on a set of \textit{reference scenarios} (files named \texttt{test01} to \texttt{test20}) covering the full spectrum of Alchemist features, 
+from simple node placement to complex environment-aware movement and reaction programs.
+
+The validation process utilizes a custom comparison framework, which performs verification at two levels:
+
+\subsubsection{Static Structural Comparison}
+
+The \texttt{StaticComparisonHelper} verifies that the DSL produces a simulation recipe identical to the YAML loader's output before execution begins. 
+It inspects the \texttt{Loader} objects produced by both systems and compares the resulting object graphs deeply.
+Key verification points include:
+\begin{itemize}
+    \item \textbf{Variable Metadata}: Asserting that the set of declared variables, their default values, and their dependency graphs are identical.
+    \item \textbf{Environment Configuration}: Checking that node counts, linking rules, and spatial dimensions match.
+    \item \textbf{Node State}: Verifying that every node is initialized at the exact same coordinates and contains the same set of molecules and concentrations.
+    \item \textbf{Program Structure}: Inspecting the reactions attached to nodes to ensure they have the same conditions, actions, and time distributions.
+\end{itemize}
+This phase ensures that the DSL syntax correctly maps to the underlying domain model structure.
+
+\subsubsection{Runtime Behavioral Comparison}
+
+Static analysis alone cannot guarantee that the simulation will evolve identically, particularly regarding the stochastic nature of Alchemist simulations. 
+If the DSL were to initialize the Random Number Generators (RNGs) in a different order than the YAML loader, the simulations would diverge immediately.
+
+To verify \textbf{execution order consistency}, the \texttt{RuntimeComparisonHelper} executes both the YAML-generated and DSL-generated simulations for a fixed number of steps or until a specific time. 
+At the end of the execution, the test asserts that:
+\begin{itemize}
+    \item The global simulation time and step count are identical.
+    \item The positions of all nodes match within a negligible floating-point tolerance ($10^{-6}$).
+    \item The content of the nodes (molecules) remains identical.
+\end{itemize}
+This stringent test confirms that the DSL respects the deterministic initialization sequence of the Alchemist core, ensuring full reproducibility of legacy experiments.
+
 \subsection{Performance Testing}
+\label{subsec:performance-testing}
+
+While the primary goal of the DSL is usability and safety, the \textbf{performance} of the loading phase must remain within acceptable limits. 
+The \texttt{PerformanceComparisonTest} suite benchmarks the initialization time of the DSL against the YAML loader.
+
+The tests measure the time required to parse the configuration and produce a ready-to-run \texttt{Simulation} object.
+While the YAML loader typically outperforms the DSL in raw loading speed—due to the overhead of Kotlin script compilation and class loading—the tests aim to verify that the overhead remains constant or linear with complexity, rather than exponential.
+The results indicate that while there is a distinct initial "warm-up" cost for the Kotlin script engine, the impact on the overall workflow is mitigated by the batch execution model, where the script is compiled only once for an arbitrary number of simulation runs.
+
 \section{Experimental Evaluation}
 \subsection{DSL Usability}
 \subsection{KSP Processor Benefits}
-
-
-
-
-
-
-
