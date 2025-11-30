@@ -3,110 +3,449 @@
 \label{chap:evaluation}
 %----------------------------------------------------------------------------------------
 
-The evaluation of the Alchemist DSL focuses on verifying that the solution meets the functional and non-functional requirements outlined in Chapter \ref{chap:analysis}. 
-The assessment is divided into two main parts: a technical validation through a comprehensive testing strategy, and a qualitative discussion on the benefits introduced by the new system.
+The evaluation of the Alchemist DSL focuses on verifying that the solution meets 
+the functional and non-functional requirements outlined in \Cref{chap:analysis}. 
+The assessment is divided into two main parts: 
+a technical validation through two different testing strategies,
+ and a qualitative discussion on the benefits introduced by the new system.
 
 \section{Testing Strategy}
 \label{sec:testing}
 
 The testing process was designed to ensure correctness, equivalence with the legacy system, and performance stability. 
-The strategy followed a multi-layered approach, starting from the unit testing of individual DSL components,
- proceeding to the structural validation of the generated simulation models, and concluding with runtime behavior comparison.
+The strategy followed an incremental approach, starting from the unit testing of individual DSL components,
+ proceeding to the structural validation of the generated simulation models, 
+ and concluding with runtime behavior comparison and performance testing.
 
 \subsection{Unit Testing}
 \label{subsec:unit-testing}
 
-The foundation of the evaluation is a rigorous unit testing suite designed to verify the correctness of individual DSL constructs in isolation. 
-Given the hierarchical nature of the configuration domain and the complexity of the underlying Alchemist model, an \textbf{incremental testing strategy} was adopted. 
-This "bottom-up" approach allowed for the validation of specific features—such as variable delegation, context scoping, and entity instantiation—before integrating them into
- complete simulation definitions.
+The unit testing phase focused on validating the core architectural mechanisms of the DSL rather than exhaustively 
+covering every possible configuration option. 
+Given that the DSL relies on a consistent recursive builder pattern, the strategy prioritized the verification of 
+the most complex and critical infrastructure components: the variable management system and the 
+type-safe context propagation.
 
-\subsubsection{Incremental DSL Validation}
+The \textbf{Variables Context} received the most extensive unit testing coverage due to its central 
+role in enabling batch executions. 
+Unit tests specifically targeted this component to ensure that the delegation mechanism correctly captures default 
+values during the definition phase and that the \texttt{DSLLoader} successfully injects run-specific values
+ during the materialization phase. 
+This isolation ensured that the complex logic handling dependent variables and potential circular dependencies was
+ robust before being integrated into the full simulation loader.
 
-The unit tests mirror the modular structure of the DSL implementation. Rather than exclusively testing full configuration files, the suite breaks down the verification into specific areas of concern:
+Beyond variables, unit tests were employed to validate the fundamental building blocks of the DSL structure,
+ such as the root \texttt{SimulationContext} and the primary nested contexts like \texttt{Deployments Context}.
+The primary objective was to verify the correct propagation of the generic types $T$ (concentration) and $P$ (position)
+ throughout the context hierarchy. 
+These tests confirmed that the Kotlin compiler and the DSL infrastructure correctly enforced type constraints,
+ preventing type mismatches within nested blocks.
 
-\begin{itemize}
-    \item \textbf{Core Structure and Contexts}: Initial tests verified the correct instantiation of the root \texttt{SimulationContext} and the propagation of generic types ($T, P$). 
-    Tests such as \texttt{TestSimulations} ensured that the \texttt{simulation} block correctly
-     initialized the loader with the specified \texttt{Incarnation} and \texttt{NetworkModel}, 
-     verifying that the fundamental building blocks of the simulation were correctly set up.
-
-    \item \textbf{Deployments Context}: The \texttt{TestDeployments} suite focused on the \texttt{deployments} context, 
-    verifying that geometric descriptors (such as \texttt{Point}, \texttt{Circle}, and \texttt{Grid}) were correctly instantiated and added to the simulation recipe. 
-    These tests confirmed that the DSL syntax for spatial definition mapped correctly to the corresponding Alchemist `Deployment` objects.
-
-    \item \textbf{Variable Delegation Logic}: A critical aspect of the DSL is the deferred execution model managed by the \texttt{VariablesContext}. 
-    The \texttt{TestVariables} suite validated the custom property delegation mechanism described in Section \ref{sec:impl-variables}. 
-    Specifically, it verified that:
-    \begin{enumerate}
-        \item Variables correctly registered their default values upon declaration.
-        \item The `getWith()` method of the Loader correctly injected new values, overriding defaults.
-        \item Dependent variables (defined via lambdas) correctly resolved their dependencies at runtime.
-        \item Invalid access patterns (e.g., circular dependencies or access before initialization) were handled gracefully or threw appropriate exceptions.
-    \end{enumerate}
-\end{itemize}
+However, an exhaustive unit test for every specific domain entity (e.g., every available reaction, condition, or deployment type)
+ was deemed redundant at this stage. 
+Since the DSL leverages a uniform builder pattern, once the core mechanisms, such as context nesting, property delegation, 
+and builder execution, were validated on the main components, the correctness of the broader domain coverage was
+ delegated to the \textbf{Equivalence Testing} phase. 
+This strategy avoided determining the correctness of individual wrappers, 
+relying instead on the comprehensive verification against the legacy YAML system to catch any discrepancies in the generated models.
 
 \subsubsection{Processor Verification}
 
-In addition to the runtime library, the Kotlin Symbol Processing (KSP) component (described in Section \ref{sec:ksp-implementation}) required a dedicated testing strategy. 
-Since the processor is responsible for generating the bridge code that makes the DSL usable, its correctness is paramount to the user experience.
+In addition, the Kotlin Symbol Processing (KSP) component (described in \Cref{sec:ksp-implementation}) 
+required a dedicated testing strategy. 
+Since the processor is responsible for generating the bridge code that makes the DSL more user-friendly,
+ its correctness is a key factor for the user experience.
 
-The unit testing for the processor involved the compilation of synthetic Kotlin sources annotated with \texttt{@BuildDsl}. 
+The unit testing for the processor involved the compilation of synthetic Kotlin sources annotated with \texttt{@AlchemistKotlinDSL}. 
 The tests asserted that the processor:
 \begin{itemize}
     \item Correctly identified the primary constructors of annotated classes.
-    \item Accurately distinguished between user-configurable parameters and system-injectable dependencies (e.g., \texttt{Environment}, \texttt{RandomGenerator}).
+    \item Accurately distinguished between user-configurable parameters and system-injectable
+     dependencies (e.g., \texttt{Environment}, \texttt{RandomGenerator}, etc.).
     \item Generated factory functions with the correct signature, including appropriate context receivers and generic constraints.
-    \item Correctly synthesized the accessor paths (e.g., mapping a request for `Environment` to the correct parent context property) to solve the context chaining problem.
+    \item Correctly synthesized the accessor paths (e.g., mapping a request for `Environment` to the correct parent context property)
+     to solve the context chaining problem.
 \end{itemize}
 
 \subsection{Equivalence Testing}
 \label{subsec:equivalence-testing}
 
-To demonstrate compliance with the \textbf{YAML equivalence} requirement, a comprehensive integration test suite was developed. 
-The objective was to prove that for any valid YAML configuration, a semantically identical DSL script exists and produces an indistinguishable simulation model.
-This verification relies on a set of \textit{reference scenarios} (files named \texttt{test01} to \texttt{test20}) covering the full spectrum of Alchemist features, 
+To demonstrate compliance with the \textbf{YAML equivalence} requirement, an integration test suite was developed. 
+The objective was to prove that for any valid YAML configuration, a semantically \textbf{identical} DSL script exists and produces 
+an indistinguishable simulation model.
+This verification relies on a set of \textit{reference scenarios}, covering the full spectrum of Alchemist features, 
 from simple node placement to complex environment-aware movement and reaction programs.
+This type of test is the core tool to verify the correctness of the DSL. It \textbf{must} be used to 
+ensure that the DSL is able to produce the same simulation model as the YAML loader. 
+The strategy used to test the DSL was to adopt a bottom-up approach, starting from the simplest scenarios 
+and gradually adding complexity. This approach allowed identifying and fixing issues early on, 
+giving a clear path to the final solution.
 
 The validation process utilizes a custom comparison framework, which performs verification at two levels:
+\begin{itemize}
+    \item \textbf{Static Structural Comparison}: verifies that the DSL produces a simulation model 
+    identical to the YAML loader's output before execution begins.
+    \item \textbf{Runtime Behavioral Comparison}: run the simulation for a certain number of steps or until a certain time,
+    and then compare the final state of the simulation.
+\end{itemize}
 
 \subsubsection{Static Structural Comparison}
 
-The \texttt{StaticComparisonHelper} verifies that the DSL produces a simulation recipe identical to the YAML loader's output before execution begins. 
-It inspects the \texttt{Loader} objects produced by both systems and compares the resulting object graphs deeply.
+The \texttt{StaticComparisonHelper} verifies that the DSL produces a simulation 
+model identical to the YAML loader's output before execution begins. 
+It inspects the \texttt{Loader} objects produced by both systems and compares the resulting simulation instances deeply.
 Key verification points include:
 \begin{itemize}
-    \item \textbf{Variable Metadata}: Asserting that the set of declared variables, their default values, and their dependency graphs are identical.
-    \item \textbf{Environment Configuration}: Checking that node counts, linking rules, and spatial dimensions match.
-    \item \textbf{Node State}: Verifying that every node is initialized at the exact same coordinates and contains the same set of molecules and concentrations.
-    \item \textbf{Program Structure}: Inspecting the reactions attached to nodes to ensure they have the same conditions, actions, and time distributions.
+    \item \textbf{Variable Metadata}: asserting that the set of declared variables and their default values are identical.
+    \item \textbf{Environment Configuration}: checking that node counts and positions match.
+    \item \textbf{Node State}: verifying that every node is initialized at the exact same
+    coordinates and contains the same set of molecules and concentrations.
+    \item \textbf{Program Structure}: inspecting the reactions attached to nodes to ensure they have the same conditions,
+     actions, and time distributions.
 \end{itemize}
 This phase ensures that the DSL syntax correctly maps to the underlying domain model structure.
+However, this static analysis approach encountered significant limitations due to the legacy nature of the Alchemist codebase. 
+Many core interfaces and classes do not expose their full internal state or do not implement value-based \texttt{equals()} methods, 
+relying instead on reference equality. 
+Verifying that two distinct instances of a complex object (e.g., a \texttt{TimeDistribution} or a \texttt{Layer}) are semantically 
+identical proved difficult without resorting to fragile reflection-based inspection of private fields. 
+
+To mitigate this, the static comparison often relies on proxy indicators, such as verifying that the class types 
+match (via class name inspection) or comparing the string representation (\texttt{toString()}) of components. 
+While useful for catching gross configuration errors, 
+these checks cannot guarantee that two objects have identical internal configurations if their string representations are incomplete.
 
 \subsubsection{Runtime Behavioral Comparison}
 
-Static analysis alone cannot guarantee that the simulation will evolve identically, particularly regarding the stochastic nature of Alchemist simulations. 
-If the DSL were to initialize the Random Number Generators (RNGs) in a different order than the YAML loader, the simulations would diverge immediately.
+To overcome the limitations of static inspection and guarantee true semantic equivalence,
+the evaluation strategy introduced a \textbf{Runtime Behavioral Comparison}. 
+The rationale is that if two simulations are configured identically, 
+and the underlying simulator is deterministic (given the same random seed), 
+they must evolve through identical states over time.
 
-To verify \textbf{execution order consistency}, the \texttt{RuntimeComparisonHelper} executes both the YAML-generated and DSL-generated simulations for a fixed number of steps or until a specific time. 
-At the end of the execution, the test asserts that:
+The \texttt{RuntimeComparisonHelper} executes both the YAML-generated and DSL-generated simulations,
+ stepping them forward for a fixed duration or a specific number of steps. 
+At the end of this execution, the framework compares the tangible, observable state of the simulation—properties that are 
+publicly accessible and critical to the simulation's outcome:
 \begin{itemize}
-    \item The global simulation time and step count are identical.
-    \item The positions of all nodes match within a negligible floating-point tolerance ($10^{-6}$).
-    \item The content of the nodes (molecules) remains identical.
+    \item \textbf{Global State}: Asserting that both simulations reached the exact same simulation time and step count.
+    \item \textbf{Node Positions}: Verifying that the coordinates of every node match, 
+    confirming that movement logic and environment boundaries are the same.
+    \item \textbf{Node Contents}: Checking that the set of molecules and their concentrations inside each node are identical,
+     confirming that reactions and diffusion processes executed in the same order and with the same effects.
 \end{itemize}
-This stringent test confirms that the DSL respects the deterministic initialization sequence of the Alchemist core, ensuring full reproducibility of legacy experiments.
+This dynamic verification provides a much stronger guarantee of correctness than static analysis. 
+It confirms not only that the components are of the right type, but that they were initialized with
+ the correct parameters and that the Random Number Generators (RNGs) were consumed in the exact same 
+ sequence, a crucial factor for reproducibility in stochastic simulations.
 
 \subsection{Performance Testing}
 \label{subsec:performance-testing}
 
-While the primary goal of the DSL is usability and safety, the \textbf{performance} of the loading phase must remain within acceptable limits. 
+While the primary goal of the DSL is usability and safety, the \textbf{performance} of the loading phase must 
+remain within acceptable limits. 
 The \texttt{PerformanceComparisonTest} suite benchmarks the initialization time of the DSL against the YAML loader.
-
 The tests measure the time required to parse the configuration and produce a ready-to-run \texttt{Simulation} object.
-While the YAML loader typically outperforms the DSL in raw loading speed—due to the overhead of Kotlin script compilation and class loading—the tests aim to verify that the overhead remains constant or linear with complexity, rather than exponential.
-The results indicate that while there is a distinct initial "warm-up" cost for the Kotlin script engine, the impact on the overall workflow is mitigated by the batch execution model, where the script is compiled only once for an arbitrary number of simulation runs.
+While the YAML loader is slightly faster than the DSL in raw loading speed, due to the overhead of Kotlin script compilation
+and class loading, the tests aim to verify that the overhead remains acceptable.
+The results show that while there is a distinct initial \textit{warm-up} cost for the Kotlin script engine,
+the impact on the overall workflow is mitigated by the batch execution model, 
+where the script is compiled only once for an arbitrary number of simulation runs.
+The tests verify that the overhead remains acceptable and that the DSL is not significantly slower than the YAML loader.
+The test was made using a moderately complex simulation configuration, as shown in \Cref{lst:complextestsim}.
+
+
+
+\begin{center}
+    \begin{minipage}{0.48\textwidth}
+    \inputminted[
+      fontsize=\tiny,
+      breaklines,
+      firstline=1,
+      lastline=42, 
+      linenos
+    ]{kotlin}{listings/complextestsim.kts}
+    \end{minipage}
+    \hfill
+    \begin{minipage}{0.48\textwidth}
+    \inputminted[
+      fontsize=\tiny,
+      breaklines,
+      firstline=43,
+      lastline=80, 
+      linenos
+    ]{kotlin}{listings/complextestsim.kts}
+    \end{minipage}
+    \captionof{lstlisting}
+    {Simulation configuration used for the performance test}
+    \label{lst:complextestsim}
+\end{center}
+\newpage
+    
+
+
+
+\Cref{tab:performance-results} presents the performance comparison results obtained 
+from 20 iterations of both the loading phase, and the action phase separately.
+The test measures the time required to load and initialize the simulation 
+configuration using both the YAML loader and the DSL loader.
+
+
+\begin{table}[h]
+\centering
+\caption{Performance comparison results (20 iterations)}
+\label{tab:performance-results}
+\begin{tabular}{l|r|r}
+\textbf{Phase} & \textbf{YAML (ms)} & \textbf{DSL (ms)} \\
+\hline
+\textbf{Loading Phase} & 11,002 & 15,802 \\
+\hline
+\textbf{Action Phase} & 4,422 & 2,734 \\
+\hline
+\textbf{Total Average} & \textbf{15,424} & \textbf{18,536} \\
+\end{tabular}
+\end{table}
+
+The results reveal an interesting performance profile: while the DSL is slower during the \textbf{Loading Phase}, 
+it performs better than the YAML loader during the \textbf{Action Phase}.
+This performance difference can be attributed to the fact that the Loading Phase includes the overhead of Kotlin script compilation, 
+which is a one-time cost that occurs when the script is first processed.
+However, once the configuration is loaded, the DSL's materialization process is more efficient, resulting in faster Action Phase execution.
+The overall performance shows that YAML is approximately 20\% faster in total time, but this overhead is acceptable given the benefits in terms of type safety, 
+IDE support, and code reusability.
+Moreover, in batch execution scenarios where the script is compiled once and used for multiple simulation runs,
+ the Loading Phase cost is amortized, making the DSL's superior Action Phase performance more significant.
 
 \section{Experimental Evaluation}
-\subsection{DSL Usability}
-\subsection{KSP Processor Benefits}
+\label{sec:experimental-evaluation}
+
+Beyond technical correctness, the success of the DSL is measured by how well it fulfills the user-centric 
+goals of usability, 
+type safety, and expressiveness. 
+This section evaluates the impact of the new system on the developer experience, 
+comparing it qualitatively against the legacy YAML-based workflow.
+
+\subsection{DSL Usability and Expressiveness}
+\label{subsec:usability}
+
+The adoption of Kotlin as the host language transforms the configuration process from writing passive data 
+descriptions (YAML) 
+to developing active simulation software. 
+This shift introduces several key improvements in usability:
+
+\begin{itemize}
+    \item \textbf{IDE-Assisted Development}: Unlike YAML, where users must rely on external documentation or 
+    schema validators (often incomplete), the DSL benefits from the full power of the IDE. 
+    Features such as \textbf{auto-completion} allow users to explore the available API surface interactively. 
+    For instance, typing \texttt{this.} instantly suggests all available properties and methods of the current context,
+    drastically reducing the need to switch context to read the documentation.
+    
+    \item \textbf{Type Safety as Feedback}: The static type system acts as an immediate feedback loop. 
+    Errors such as assigning a \texttt{Double} to an \texttt{Int} parameter, or attempting to use a 2D position in
+     a generic implementation, are flagged at compile-time (or edit-time in the IDE) rather 
+     than crashing the simulation at runtime. Furthermore, users can leverage standard Kotlin language constructs,
+     such as \texttt{for} loops, \texttt{if} statements, and other control flow primitives, enabling more expressive and flexible
+     simulation configurations.
+
+    \item \textbf{Scope Safety}: The use of \texttt{@AlchemistDsl} annotations (as detailed in \Cref{chap:implementation}) 
+    successfully solved the structural ambiguity problem. 
+    The compiler now enforces the domain hierarchy, making it syntactically impossible to nest 
+    components incorrectly (e.g., defining a node inside a reaction). 
+    This provides a structural guarantee that the YAML parser could only approximate through runtime validation.
+\end{itemize}
+
+One of the most powerful advantages of using Kotlin as the host language is the ability to create reusable 
+components and functions that can be shared across multiple simulation files. 
+Unlike YAML, where configuration must be duplicated or manually copied between files, 
+the DSL enables users to define common patterns as functions or extension functions, 
+which can be imported and reused throughout their project. 
+This approach promotes code reuse, reduces duplication, and ensures consistency across simulations.
+
+Consider, for example, a scenario where multiple simulations require a similar deployment pattern, 
+such as a grid-based node placement with a specific reaction configuration. 
+In YAML, this pattern would need to be replicated in each configuration file, 
+making it difficult to maintain consistency and apply changes uniformly. 
+
+\begin{minted}[fontsize=\scriptsize, linenos]{YAML}
+incarnation: sapere
+environment: { type: OSMEnvironment }
+network-model: { type: ConnectWithinDistance, parameters: [1000] }
+_venice_lagoon: &lagoon
+  [[45.2038121, 12.2504425], [45.2207426, 12.2641754], [45.2381516, 12.2806549],
+   [45.2570053, 12.2895813], [45.276336, 12.2957611], [45.3029049, 12.2991943],
+   [45.3212544, 12.3046875], [45.331875, 12.3040009], [45.3453893, 12.3040009],
+   [45.3502151, 12.3156738], [45.3622776, 12.3232269], [45.3719259, 12.3300934],
+   [45.3830193, 12.3348999], [45.395557, 12.3445129], [45.3998964, 12.3300934],
+   [45.4018249, 12.3136139], [45.4105023, 12.3122406], [45.4167685, 12.311554],
+   [45.4278531, 12.3012543], [45.4408627, 12.2902679], [45.4355628, 12.2772217],
+   [45.4206242, 12.2703552], [45.3994143, 12.2744751], [45.3738553, 12.2676086],
+   [45.3579354, 12.2614288], [45.3429763, 12.2497559], [45.3198059, 12.2408295],
+   [45.2975921, 12.2346497], [45.2802014, 12.2408295], [45.257972, 12.233963],
+   [45.2038121, 12.2504425]]
+deployments:
+  type: Polygon
+  parameters: [500, *lagoon]
+  programs:
+    - time-distribution: 10
+      type: Event
+\end{minted}
+\captionof{lstlisting}{Example of a YAML simulation script with a complex deployment}
+
+With the Kotlin DSL, users can define a reusable function that encapsulates this pattern:
+
+\begin{minted}[fontsize=\scriptsize, linenos]{kotlin}
+fun createLagoon() = listOf(
+    45.2038121 to 12.2504425, 45.2207426 to 12.2641754, 45.2381516 to 12.2806549,
+    45.2570053 to 12.2895813, 45.276336 to 12.2957611, 45.3029049 to 12.2991943,
+    45.3212544 to 12.3046875, 45.331875 to 12.3040009, 45.3453893 to 12.3040009,
+    45.3502151 to 12.3156738, 45.3622776 to 12.3232269, 45.3719259 to 12.3300934,
+    45.3830193 to 12.3348999, 45.395557 to 12.3445129, 45.3998964 to 12.3300934,
+    45.4018249 to 12.3136139, 45.4105023 to 12.3122406, 45.4167685 to 12.311554,
+    45.4278531 to 12.3012543, 45.4408627 to 12.2902679, 45.4355628 to 12.2772217,
+    45.4206242 to 12.2703552, 45.3994143 to 12.2744751, 45.3738553 to 12.2676086,
+    45.3579354 to 12.2614288, 45.3429763 to 12.2497559, 45.3198059 to 12.2408295,
+    45.2975921 to 12.2346497, 45.2802014 to 12.2408295, 45.257972 to 12.233963,
+    45.2038121 to 12.2504425,
+)
+\end{minted}
+\captionof{lstlisting}{Example of a reusable deployment function}
+
+The \textit{createLagoon} function can now be used to create a lagoon deployment in any simulation script:
+
+\begin{minted}[fontsize=\footnotesize, linenos]{kotlin}
+simulation(incarnation) {
+    networkModel = ConnectWithinDistance(1000.0)
+    deployments {
+        val lagoon = createLagoon()
+        deploy(polygon(500, lagoon)) {
+            programs {
+                all {
+                    timeDistribution("10")
+                    reaction = event()
+                }
+            }
+        }
+    }
+}
+\end{minted}
+
+This approach makes the configuration more readable and maintainable. 
+Modifying the lagoon deployment requires only updating the \textit{createLagoon} function, 
+without the need to update all configurations that use it.
+
+Another approach is to directly define new DSL blocks to match the simulation domain. 
+For example, a \textit{lagoon} block can be defined as follows:
+
+\begin{minted}[fontsize=\footnotesize, linenos]{kotlin}
+simulation(incarnation) {
+    networkModel = ConnectWithinDistance(1000.0)
+    deployments {
+        lagoon(500) {
+            programs {
+                all {
+                    timeDistribution("10")
+                    reaction = event()
+                }
+            }
+        }
+    }
+}
+\end{minted}
+
+The key benefit of this approach is that users can customize the DSL to match their specific simulation 
+domain by creating reusable libraries or modules. 
+These domain-specific extensions can define functions and DSL blocks with names and structures 
+that align with the terminology and concepts of the target domain, 
+such as \texttt{lagoon}, \texttt{swarm}, or \texttt{agent}. 
+This domain-driven customization significantly enhances the readability of simulation scripts, 
+as the syntax becomes more intuitive and self-documenting for domain experts. 
+Furthermore, it provides users with greater control over the DSL syntax, 
+enabling them to create abstractions that precisely match their modeling needs 
+while maintaining full type safety and IDE support.
+
+Finally, users can leverage standard Kotlin language features to create more complex simulations. 
+For example, they can use \texttt{for} loops or \texttt{if} statements to create more complex situations 
+without manually listing all possible cases.
+\begin{minted}[fontsize=\footnotesize, linenos]{kotlin}
+simulation(incarnation, { env }) {
+    deployments {
+        for (i in 1..10) {
+            for (j in 1..10) {
+                if (i == j) continue
+                deploy(point(i.toDouble(), j.toDouble())){
+                    // ...
+                }
+            }
+        }
+    }
+}
+\end{minted}
+
+This example demonstrates only a simple usage of standard Kotlin language features to create more complex simulations. 
+However, this design allows users to fully customize the DSL to match their specific simulation domain.
+
+\subsection{Impact of the KSP Processor}
+\label{subsec:ksp-evaluation}
+
+The introduction of the KSP processor was a \textbf{decisive} factor in making the DSL usable in practice. 
+Without the automatic generation of bridge code, the DSL would have suffered from severe verbosity, 
+requiring users to manually inject system dependencies (like \texttt{environment} or \texttt{randomGenerator}) into every component constructor.
+In the example below (\Cref{lst:example-verbose}), the usage of a \textit{BrownianMove} reaction would have been very verbose, since the reaction 
+block is deeply nested in the context hierarchy. In this case, the reaction also requires several internal parameters to be passed to the constructor, 
+reducing the readability of the code.
+
+
+\begin{minted}[fontsize=\footnotesize, linenos]{kotlin}
+simulation(incarnation) {
+    networkModel = ConnectWithinDistance(1000.0)
+    deployments {
+        lagoon(500) {
+            programs {
+                all {
+                    timeDistribution("10")
+                    reaction = Event(node, timeDistribution)
+                    addAction {
+                        BrownianMove(
+                            env,
+                            node,
+                            ctx.ctx.ctx.ctx.simulationGenerator,
+                            0.0005,
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
+\end{minted}
+\label{lst:example-verbose}
+\captionof{lstlisting}{Example of a simulation script with no helper functions}
+
+With the KSP processor, it generates a helper function that can be used to create the reaction (as shown in \Cref{lst:example-helper}), 
+simplifying the code and improving the readability. It also avoids the need to manually inject the system dependencies into the constructor, 
+since they are injected automatically by the helper function.
+\newpage
+\begin{minted}[fontsize=\footnotesize, linenos]{kotlin}
+simulation(incarnation) {
+    networkModel = ConnectWithinDistance(1000.0)
+    deployments {
+        lagoon(500) {
+            programs {
+                all {
+                    timeDistribution("10")
+                    reaction = event()
+                    addAction {
+                        brownianMove(0.0005)
+                    }
+                }
+            }
+        }
+    }
+}
+\end{minted}
+\label{lst:example-helper}
+\captionof{lstlisting}{Example of simulation script with helper functions}
+
+Note that, by default, the generated functions are defined using the same name of the object they are generating, 
+but with the first letter in lowercase. This should simplify the usage of the helper functions, since users can just
+use the lowercase version of the object name to call the helper function. 

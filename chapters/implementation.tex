@@ -5,13 +5,16 @@
 
 \section{DSL Implementation} 
 
-The implementation of the Alchemist DSL leverages the advanced features of the Kotlin language to create a type-safe, declarative configuration system. The following sections detail the core mechanisms used to build the DSL, focusing on the builder pattern, variable management, and the integration with the Alchemist loading system.
+The implementation of the Alchemist DSL leverages the advanced features of the Kotlin language to create a type-safe, 
+declarative configuration system.
+The following sections detail the core mechanisms used to build the DSL, 
+focusing on the builder pattern, variable management, and the integration with the Alchemist loading system.
 
 \subsection{Builder Functions}
 
 The declarative syntax of the Alchemist DSL relies on Kotlin's \textit{function literals with receiver}. 
 This feature allows a lambda expression to adopt the scope of a specific receiver object, binding the \texttt{this} keyword within the lambda to that object.
- This enables the creation of hierarchical structures where nested blocks map to nested context objects, reflecting the domain model outlined in Chapter~\ref{chap:design}.
+ This enables the creation of hierarchical structures where nested blocks map to nested context objects, reflecting the domain model outlined in \Cref{chap:design}.
 
 In the implementation, each DSL scope is backed by a specific \textit{Context} interface,
  which defines the operations and properties available within that scope. 
@@ -42,28 +45,28 @@ When a user invokes \verb|deployments { ... }|, the lambda passed as the \texttt
   representation (\texttt{P}) are established up front.
  As a consequence, all operations and properties accessible within the various context interfaces are inherently generic and bound to the chosen types.
  This design ensures that, within each scope, all entities and DSL constructs consistently adhere to the type constraints specified at the root of the simulation definition.
-
+\newpage
  \begin{minted}[fontsize=\footnotesize, linenos]{kotlin}
-    val incarnation = SAPERE.incarnation<Double, Euclidean2DPosition>()
-    simulation(incarnation) {
-        // Inside this scope and all the nested scopes, 
-        // T and P must be Double and Euclidean2DPosition
-        networkModel = ConnectWithinDistance(5.0)
-        deployments {
-            deploy(point(0.0, 0.0)){
-                // ...
-            }
-            deploy(point(0.0, 1.0)){
-                // ...
-            }
+val incarnation = SAPERE.incarnation<Double, Euclidean2DPosition>()
+simulation(incarnation) {
+    // Inside this scope and all the nested scopes, 
+    // T and P must be Double and Euclidean2DPosition
+    networkModel = ConnectWithinDistance(5.0)
+    deployments {
+        deploy(point(0.0, 0.0)){
+            // ...
+        }
+        deploy(point(0.0, 1.0)){
+            // ...
         }
     }
-     \end{minted}
-     \captionof{lstlisting}{Example of DSL syntax}
+}
+    \end{minted}
+    \captionof{lstlisting}{Example of DSL syntax}
 
 
 \subsection{Execution Order}
-As described in the design chapter~\ref{chap:design}, execution is often deferred and stored in a list of \textit{build steps}:
+As described in the \Cref{chap:design}, execution is often deferred and stored in a list of \textit{build steps}:
 
 \begin{minted}[fontsize=\footnotesize, linenos]{kotlin}
 override fun deployments(block: DeploymentsContext<T, P>.() -> Unit) {
@@ -83,25 +86,25 @@ To achieve this, the order of declarations in the DSL script must match the sequ
  The random number generators are heavily used by the simulation model to generate model entities such as nodes, positions, reactions, etc.
 
 In the existing implementation,
- the simulation model is created directly within the \textit{Loader} component.
+ the simulation model is created directly within the \textit{Loader} component (see \Cref{fig:yamlLoader}).
   This results in a monolithic class responsible for the entire model's creation, which is difficult to maintain and extend.
 
-\begin{figure}[H]
+\begin{figure}
     \centering
-    \includesvg[width=0.5\textwidth]{figures/yamlLoader}
+    \includesvg[width=0.6\textwidth]{figures/yamlLoader}
     \caption{Legacy YAML Loader Architecture}
     \label{fig:yamlLoader}
 \end{figure}
 
 The model is built using a \textit{depth-first} traversal of the context tree. 
 This ensures dependencies are resolved before moving forward. 
-As shown in the example in Figure~\ref{fig:dfsTraversal}, with two deployments, 
+As shown in the example in \Cref{fig:dfsTraversal}, with two deployments, 
 the system fully materializes the first before starting the second.
  Within a deployment, it iterates through the generated nodes. 
  For each node, it injects properties and contents, then attaches reaction programs, and finally adds the node to the environment. 
  This deterministic order is essential for consistency with the legacy YAML loader's random number generation.
 
-\begin{figure}[H]
+\begin{figure}[htbp]
     \centering
     \includesvg[width=\textwidth]{figures/dfs}
     \caption{Depth-First Traversal of the Configuration Tree}
@@ -113,7 +116,7 @@ while preserving the necessary depth-first traversal.
 Most context implementation classes define an \textit{apply}-prefixed method (e.g., \texttt{applyToNode}), hidden from DSL users, 
 which the loader uses internally to modify the simulation model.
 
-\begin{figure}[H]
+\begin{figure}[htbp]
     \centering
     \includesvg[width=\textwidth]{figures/dslbuildsteps}
     \caption{DSL Context Delegation Flow}
@@ -224,20 +227,20 @@ val rate: Double by variable(LinearVariable(0.0, 1.0, 10.0))
     The implementation uses the property \textbf{name} (e.g., "rate") as a key to register the variable definition in the \texttt{VariablesContext}. Also in this phase, 
     the default value of the variable is registered in the \texttt{defaults} map, which will later be used to assign the initial value of variables during the materialization phase. 
     Note that the default value is a mandatory property of the \textit{Variable} interface. 
-    
+ \newpage
 \begin{minted}[fontsize=\footnotesize, linenos]{kotlin}
-    operator fun provideDelegate(thisRef: Any?, prop: KProperty<*>):
-     ReadOnlyProperty<Any?, T> {
-        // Check if the variable name already exists
-        check(!variables.containsKey(prop.name) && 
-        !dependentVariables.contains(prop.name)) {
-            "Variable ${prop.name} already exists"
-        }
-        logger.debug("Registering variable: {}", prop.name)
-        variables[prop.name] = source
-        defaults[prop.name] = source.default
-        return Ref()
+operator fun provideDelegate(thisRef: Any?, prop: KProperty<*>):
+    ReadOnlyProperty<Any?, T> {
+    // Check if the variable name already exists
+    check(!variables.containsKey(prop.name) && 
+    !dependentVariables.contains(prop.name)) {
+        "Variable ${prop.name} already exists"
     }
+    logger.debug("Registering variable: {}", prop.name)
+    variables[prop.name] = source
+    defaults[prop.name] = source.default
+    return Ref()
+}
 \end{minted}
 
     \item \textbf{Delegate Creation}: The method returns a \texttt{Ref} instance, which acts as the runtime delegate for the property.
@@ -256,7 +259,7 @@ inner class Ref<T : Serializable> : ReadWriteProperty<Any?, T> {
 }
 \end{minted}
 
-As described in the design chapter~\ref{chap:design}, the variables' registry is populated during the materialization phase, by the \textit{DSLLoader}, 
+As described in the design \Cref{chap:design}, the variables' registry is populated during the materialization phase, by the \textit{DSLLoader}, 
 which is in charge of assigning the real value for each variable for each simulation instance in the batch. 
 If the user attempts to access the variable \texttt{rate} during the script's definition phase (before the simulation is actually built),
  the \texttt{references} map will contain only defaults, and the access will function correctly. 
@@ -269,7 +272,7 @@ Before building the simulation model, the loader populates the \texttt{reference
 the specific values for the current run. After that, the loader executes the build steps.
 
 
-\begin{figure}[H]
+\begin{figure}
     \centering
     \includesvg[width=\textwidth]{figures/variableRegistry}
     \caption{Variables Context Design}
@@ -281,7 +284,7 @@ any access to the delegated properties (e.g., \texttt{deploy(point(x, y))}) trig
 Since the \texttt{references} map is now \textbf{populated} with the values for that specific run, 
 the property resolves to the correct value, effectively \textit{grounding} the simulation configuration.
 
-While the legacy YAML configuration system explicitly models the concept of \textbf{dependent variables}, variables whose values are derived from others, 
+While the legacy YAML configuration system explicitly models the concept of \textbf{dependent variables} (variables whose values are derived from others) 
 to manage dependencies and order of evaluation, the DSL implementation can dispense with this formal distinction. 
 By leveraging Kotlin's language features, dependent variables are simply defined as variables initialized with a lambda expression.
 
@@ -343,9 +346,13 @@ to enforce immutability within the simulation logic, the delegate's \texttt{setV
 \end{minted}
     
 Consequently, while the legacy \texttt{Loader} interface maintains a list of \texttt{DependentVariable} objects,
- the new \texttt{DSLLoader} can safely ignore this field, relying entirely on Kotlin's native delegation and scope resolution mechanisms to handle variable dependencies.
-  This design simplifies the internal architecture while providing a more intuitive and type-safe experience for the user.
+ the new \texttt{DSLLoader} can safely ignore this field, relying entirely on Kotlin's native delegation and scope resolution 
+ mechanisms to handle variable dependencies. 
  
+ To handle \textbf{constants}, the DSL simply leverages the Kotlin language, by letting users define a variable with a constant value.
+ There is no need to handle them in a special way since they do not depend on other variables, so they are treated as regular 
+ Kotlin variables. Constants can be defined at any context level, even outside the DSL context.
+ This design simplifies the internal architecture while providing a more intuitive and type-safe experience for the user.
 
 \subsection{Batch Mode Support}
 \label{sec:batch-mode}
@@ -379,7 +386,7 @@ To resolve this conflict without sacrificing the benefits of parallel execution,
 storage\footnote{\url{https://kotlinlang.org/docs/coroutine-context-and-dispatchers.html}}.
 The \texttt{VariablesContext} does not store the mapping of variable names to values in a standard field. 
 Instead, it wraps the registry in a \texttt{ThreadLocal} container.
-
+\newpage
 \begin{minted}[fontsize=\footnotesize, linenos]{kotlin}
 class VariablesContext {
     // ...
@@ -430,11 +437,11 @@ It allows the DSL to maintain a singleton-like definition structure while suppor
 \label{sec:ksp-implementation}
 %----------------------------------------------------------------------------------------
 
-To address the usability challenges identified in the analysis phase~\ref{chap:analysis}, specifically the parameter injection overhead, the context chaining verbosity, and the generic type mismatches, 
+To address the usability challenges identified in the \Cref{chap:analysis}, specifically the parameter injection overhead, the context chaining verbosity, and the generic type mismatches, 
 the system employs a generative approach powered by the \textbf{Kotlin Symbol Processing} (KSP) API.
 
 The core component is the \texttt{DslBuilderProcessor}, which automates the creation of the DSL integration layer. 
-By annotating Alchemist components with \texttt{@BuildDsl}, developers trigger the automatic generation of type-safe, context-aware factory functions. 
+By annotating Alchemist components with \texttt{@AlchemistKotlinDSL}, developers trigger the automatic generation of type-safe, context-aware factory functions. 
 These functions bridge the gap between the declarative DSL syntax and the complex instantiation requirements of the underlying Java/Kotlin classes.
 
 \begin{minted}[fontsize=\footnotesize]{kotlin}
@@ -469,7 +476,7 @@ In the initial prototype, this required explicit chaining of context references,
 This not only degrades readability but also tightly couples the user script to the internal implementation details of the context hierarchy.
 
 The third usability challenge involves the \textbf{generic type mismatch} inherent in the legacy codebase.
- As discussed in Section~\ref{chap:analysis}, many Alchemist domain classes (e.g., \texttt{Grid}) are not generic over the simulation types \texttt{T} and \texttt{P}. 
+ As discussed in \Cref{chap:analysis}, many Alchemist domain classes (e.g., \texttt{Grid}) are not generic over the simulation types \texttt{T} and \texttt{P}. 
  Instead, they often implement interfaces with star-projected types (e.g., \texttt{Deployment<Position<*>>}), effectively erasing type information.
 A strict DSL would require users to manually cast these objects to the specific \texttt{Deployment<P>} type expected by the context, leading to verbose and error-prone configuration scripts.
 
@@ -481,7 +488,7 @@ The code generation process is orchestrated by the \texttt{DslBuilderProcessor} 
  The pipeline proceeds in four distinct stages:
 
 \begin{enumerate}
-    \item \textbf{Symbol Discovery}: The processor queries the KSP resolver to identify all classes annotated with \texttt{@BuildDsl}. 
+    \item \textbf{Symbol Discovery}: The processor queries the KSP resolver to identify all classes annotated with \texttt{@AlchemistKotlinDSL}. 
     It filters the results to ensure that only valid, concrete class declarations are processed.
     
     \item \textbf{Constructor Analysis}: The \texttt{ConstructorFinder} selects the most suitable constructor for instantiation, prioritizing the primary constructor. 
@@ -492,8 +499,8 @@ The code generation process is orchestrated by the \texttt{DslBuilderProcessor} 
     the processor infers the appropriate \textit{ContextType} required for the factory function. 
     The inference logic defaults to the \textbf{outermost} context capable of satisfying all dependencies.
     For example, if a class requires only the \texttt{Environment}, the context type will be \texttt{SIMULATION},
-     because it can be accessed from the simulation context,
-    however it is not possible to determine if that component will be used inside a deployment, a program, a property, etc.
+     because it can be accessed from the simulation context.
+    However, it is not possible to determine if that component will be used inside a deployment, a program, a property, etc.
     This avoids requiring users to manually specify the context of the function signature during the annotation usage.
     
     \item \textbf{Code Generation}: The \texttt{CodeGenerator} synthesizes the final Kotlin source file. 
@@ -510,7 +517,7 @@ The processor's primary responsibility is to generate \textit{factory functions}
 The main goal here is to enhance the usability of the DSL, without sacrificing type safety.
 
 The solution relies on \textbf{context analysis} to distinguish between user-configurable parameters and system-injectable dependencies. 
-The processor scans the primary constructor of each class annotated with \texttt{@BuildDsl} and classifies its parameters.
+The processor scans the primary constructor of each class annotated with \texttt{@AlchemistKotlinDSL} and classifies its parameters.
 If a parameter type matches a known infrastructural component (e.g., \texttt{Environment}, \texttt{RandomGenerator}, \texttt{Incarnation}), 
 it is marked for \textbf{auto-injection}. 
 All other parameters are considered configuration values to be provided by the user.
@@ -546,7 +553,7 @@ While this approach is simple and effective, it would require manual updates to 
 However, the extensibility of the Alchemist simulator depends not on modifying the core meta-model or syntax structure, but on introducing new implementations
  of existing components (e.g., custom deployments, exporters, or output monitors). 
 Consequently, the DSL processor supports this primary form of extensibility: users can seamlessly generate the necessary helper functions for their custom components 
-simply by applying the \texttt{@BuildDsl} annotation.
+simply by applying the \texttt{@AlchemistKotlinDSL} annotation.
 
 
 \subsubsection{Leveraging Context Parameters}
@@ -575,11 +582,11 @@ They do not need to be members of the Context interfaces, keeping the API surfac
 \subsubsection{Scope Customization}
 
 While the processor can infer the required scope based on constructor parameters, 
-the system allows for explicit control via the \texttt{@BuildDsl} annotation. 
+the system allows for explicit control via the \texttt{@AlchemistKotlinDSL} annotation. 
 Since the DSL infers the context from the dependencies, picking the outermost context that can satisfy all dependencies,
 sometimes it is necessary to restrict the context in which the component can be used.
 For example, the \texttt{Point} deployment class has the following constructor:
-
+\newpage
 \begin{minted}[fontsize=\footnotesize]{java}
 public Point(final Environment<?, P> environment, final double x, final double y) {
     this.x = x;
@@ -593,10 +600,10 @@ The only injectable parameter is the \texttt{environment}, so the inferred conte
 This means that the generated \textit{point()} function will be callable only inside the simulation context scope.
 However, the correct scope should be the \texttt{DEPLOYMENTS\_CONTEXT} since the \texttt{Point} class is a deployment, and for this reason, 
 it should be used inside the \textit{deployments} block. To address this issue, the user can specify the scope manually 
-using the \texttt{scope} parameter of the \texttt{@BuildDsl} annotation.
+using the \texttt{scope} parameter of the \texttt{@AlchemistKotlinDSL} annotation.
 
 \begin{minted}[fontsize=\scriptsize]{java}
-@BuildDsl(scope = "DEPLOYMENTS_CONTEXT")
+@AlchemistKotlinDSL(scope = "DEPLOYMENTS_CONTEXT")
 public final class Point<P extends Position<? extends P>> implements Deployment<P> {
     // ...
 }    
@@ -607,14 +614,14 @@ If a user specifies a scope that cannot satisfy the class's dependencies (e.g., 
 the processor will fail to inject the dependencies, requesting them in the function signature.
 This customization ensures more control over the context in which the component can be used.
 
-Additionally, the \texttt{@BuildDsl} annotation provides the \texttt{functionName} parameter, 
+Additionally, the \texttt{@AlchemistKotlinDSL} annotation provides the \texttt{functionName} parameter, 
 allowing developers to customize the name of the generated factory function. 
 By default, the processor derives the name from the class (e.g., \texttt{Grid} becomes \texttt{grid}), 
 but this override enables authors to provide more idiomatic or domain-specific names when necessary.
 
 \subsubsection{Generic Type Mismatch}
 
-To address the generic type mismatch challenge, described in Section~\ref{sec:context-access-challenge},    
+To address the generic type mismatch challenge, described in \Cref{sec:context-access-challenge},    
 the processor implements a simple type matching strategy.
 During the code generation phase, 
 the \texttt{ConstructorParamBuilder} component analyzes the type signature of each constructor parameter and compares it with the type of the corresponding object 

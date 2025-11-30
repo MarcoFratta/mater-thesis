@@ -78,7 +78,7 @@ the same simulation model as the YAML configuration.
 The development of the Kotlin DSL should not require any changes to the existing YAML configuration files.
 The same is true for the \textit{loading system} of Alchemist: 
 it should be able to load both YAML and Kotlin DSL configuration files. 
-The actual system should be extended but not replaced. 
+The existing system should be extended but not replaced. 
 
 \subsection{Kotlin Language Constraints}
 
@@ -118,9 +118,9 @@ The YAML equivalence functional requirement ensures that the DSL can express all
 representable in YAML and produces \textbf{identical} simulation models. 
 Since it is assumed that the current YAML configuration system is working correctly,
 it can be used as a reference to ensure that the DSL can produce the same simulation model. 
-The Alchemist YAML specification can be used as a reference to define the semantics of the DSL, since we want 
+The Alchemist YAML specification can be used as a reference to define the semantics of the DSL, because we want 
 the DSL to have the same semantics as the YAML configuration. 
-The user should be, in theory, able to convert an existing YAML configuration file to a DSL configuration file and vice versa, 
+In theory, the user should be able to convert an existing YAML configuration file to a DSL configuration file and vice versa, 
 and the two configurations should produce the same simulation model. Moreover, a user should expect 
 to find in the DSL configuration system all the features of the YAML configuration system.
 
@@ -130,11 +130,8 @@ The loading system requirements mandate integration with Alchemist's existing co
 loading infrastructure, enabling the DSL to work alongside YAML configurations.
 The loading system should be able to load both YAML and Kotlin DSL configuration files. 
 Currently, the loading system is able to load the simulation model from YAML configuration files with a \textit{.yaml} extension.
-The loading system should be extended to also support the new Kotlin DSL configuration files with a \textit{.kts} extension. 
-\begin{itemize}
-    \item \textbf{Via Gradle}
-    \item \textbf{Via Standalone Application}
-\end{itemize}
+The loading system should be extended to also support the new Kotlin DSL configuration files with a \textit{.kts} extension, 
+both when Alchemist is executed via Gradle build scripts and when it is run as a standalone application.
 
 
 \subsection{Type Safety}
@@ -245,7 +242,7 @@ This requirement can be broken down into two key aspects: \textbf{modularity} an
 
 \paragraph{Modularity and Reusability}
 The DSL must overcome the limitations of the current YAML configuration system regarding code reuse.
-As analyzed in Chapter~\ref{chap:introduction}, YAML's reuse mechanisms are limited to file-local anchors,
+As analyzed in \Cref{chap:introduction}, YAML's reuse mechanisms are limited to file-local anchors,
  preventing the sharing of configuration components across multiple files.
 The Kotlin DSL must allow users to define reusable simulation components, such as node templates, environment configurations, 
 or reaction patterns, that can be imported and used in multiple simulation definitions.
@@ -303,10 +300,10 @@ In a standard Kotlin program, instantiating a class requires providing arguments
 However, Alchemist's model classes are designed to be instantiated via a dependency injection mechanism.
 Their constructors often require two types of parameters:
 \begin{itemize}
-    \item \textbf{Configuration parameters}: Values that define the specific 
+    \item \textbf{Configuration parameters}: values that define the specific 
     behavior of the instance (e.g., the radius of a neighborhood, the probability of a reaction).
      These are the values the user intends to configure.
-    \item \textbf{Contextual parameters}: Objects representing the simulation state or 
+    \item \textbf{Contextual parameters}: objects representing the simulation state or 
     services (e.g., \texttt{Environment}, \texttt{RandomGenerator}, \texttt{TimeDistribution}). 
     These are technical dependencies required for the object to function but are typically managed by the framework, not the user.
 \end{itemize}
@@ -330,12 +327,12 @@ This suggests the need for a generative approach to create these simplified APIs
 Given the trade-offs involved, the analysis establishes the following hierarchy of quality attributes to guide design decisions:
 
 \begin{enumerate}
-    \item \textbf{Correctness and Safety}: The DSL must prevent invalid configurations.
+    \item \textbf{Correctness and Safety}: the DSL must prevent invalid configurations.
      If a trade-off must be made between flexibility and safety, safety generally takes precedence. 
      However, the system must not prevent valid configurations that are possible in YAML.
     \item \textbf{User Experience}: IDE support (autocompletion, documentation) is a core value proposition. 
     Features that enhance the developer experience are prioritized over implementation simplicity.
-    \item \textbf{Performance}: As stated earlier, while the loading time should be reasonable, 
+    \item \textbf{Performance}: as stated earlier, while the loading time should be reasonable, 
     the runtime performance of the simulation is less important. 
     The loading phase can tolerate a slight overhead if it buys significant safety and usability gains.
 \end{enumerate}
@@ -367,7 +364,7 @@ This phase performs several critical operations:
 
 \begin{itemize}
     \item \textbf{Variable identification}: 
-    The Alchemist simulator enables \textit{batch} execution, allowing users to run the same simulation configuration multiple 
+    the Alchemist simulator enables \textit{batch} execution, allowing users to run the same simulation configuration multiple 
     times with varying parameters.
     Consider a scenario where a researcher wants to study crowd dynamics by placing a group of pedestrians in a circle.
     Instead of creating separate configuration files for every combination
@@ -377,27 +374,27 @@ This phase performs several critical operations:
     
     To support this mechanism, the loading system identifies three distinct categories of variables:
     \begin{itemize}
-        \item \textbf{Constants}: Variables whose values can be immediately 
+        \item \textbf{Constants}: variables whose values can be immediately 
         evaluated without dependencies on other variables. 
         These are computed during loader creation and remain 
         fixed across all simulation instances.
-        \item \textbf{Dependent variables}: Variables whose values can be computed once 
+        \item \textbf{Dependent variables}: variables whose values can be computed once 
         the values of free variables are known. 
         These are registered during loader creation but evaluated later during simulation 
         instantiation.
-        \item \textbf{Free variables}: Variables that require explicit user-provided values. 
+        \item \textbf{Free variables}: variables that require explicit user-provided values. 
         These variables define the parameter space for batch simulations and must be instantiated 
         with ground values before simulation construction.
     \end{itemize}
     
-    \item \textbf{Launcher configuration}: The system loads and instantiates the \textbf{launcher} component,
+    \item \textbf{Launcher configuration}: the system loads and instantiates the \textbf{launcher} component,
      which manages simulation execution lifecycle. 
      This configuration is independent of individual simulation parameters and remains constant across batch runs.
     
-    \item \textbf{Remote dependencies loading}: External dependencies required for the configuration are identified and prepared. 
+    \item \textbf{Remote dependencies loading}: external dependencies required for the configuration are identified and prepared. 
 \end{itemize}
 
-\begin{figure}[H]
+\begin{figure}
     \makebox[\textwidth][c]{\includegraphics[width=\textwidth]{figures/loadingphase1.pdf}}
     \caption{The Loader Creation phase diagram}
     \label{fig:loadingphase1}
@@ -407,22 +404,22 @@ This phase performs several critical operations:
 Upon completion of the loader creation phase, a \texttt{Loader} object is produced that encapsulates the configuration 
 template along with metadata about variables, constants, and execution parameters. 
 \begin{minted}[fontsize=\footnotesize]{kotlin}
-    interface Loader : Serializable {
+interface Loader : Serializable {
 
-    val constants: Map<String, Any?>
-    val remoteDependencies: List<String>
-    val launcher: Launcher
-    val dependentVariables: Map<String, DependentVariable<*>>
-    val variables: Map<String, Variable<*>>
+val constants: Map<String, Any?>
+val remoteDependencies: List<String>
+val launcher: Launcher
+val dependentVariables: Map<String, DependentVariable<*>>
+val variables: Map<String, Variable<*>>
 
-    fun <T, P : Position<P>> getDefault(): Simulation<T, P>
-    fun <T, P : Position<P>> getWith(values: Map<String, *>): Simulation<T, P>
-    fun launch(launcher: Launcher = this.launcher): Unit
+fun <T, P : Position<P>> getDefault(): Simulation<T, P>
+fun <T, P : Position<P>> getWith(values: Map<String, *>): Simulation<T, P>
+fun launch(launcher: Launcher = this.launcher): Unit
 }
 \end{minted}
 \captionof{lstlisting}{Loader interface}
 
-This loader serves as a factory for generating simulation instances. A Simulation can be generated either by
+This loader serves as a factory for generating simulation instances. A simulation can be generated either by
 using the \textit{getDefault()} method, which will assign to each variable its default value, or by using the  
 \textit{getWith()} method, which will assign to each variable the value provided in the map.
 
@@ -433,15 +430,15 @@ For each batch run, the getWith() method of the loader must be invoked.
 This phase transforms the configuration template into an executable simulation model through the following steps:
 
 \begin{itemize}
-    \item \textbf{Variable reification}: Free variables receive their ground values from the provided map, 
+    \item \textbf{Variable reification}: free variables receive their ground values from the provided map, 
     with defaults used for unspecified variables. The system validates that all provided variable names correspond 
     to known free variables.
     
-    \item \textbf{Dependent variable computation}: Once all free variables have ground values, 
+    \item \textbf{Dependent variable computation}: once all free variables have ground values, 
     dependent variables are evaluated using their registered computation functions. 
     The system ensures that all dependencies are satisfied before evaluation.
     
-    \item \textbf{Simulation model construction}: The system constructs the complete simulation model, including:
+    \item \textbf{Simulation model construction}: the system constructs the complete simulation model, including:
     \begin{itemize}
         \item \textit{Incarnation} type of the simulation;
         \item \textit{Environment} instantiation with specified dimensions and properties;
@@ -470,7 +467,7 @@ the internal wiring of the simulation components.
 \end{itemize}
 
 \begin{figure}[H]
-    \makebox[\textwidth][c]{\includegraphics[width=0.4\textwidth]{figures/loadingphase2.pdf}}
+    \makebox[\textwidth][c]{\includegraphics[width=0.6\textwidth]{figures/loadingphase2.pdf}}
     \caption{The Simulation Instantiation phase diagram}
     \label{fig:loadingphase2}
 \end{figure}
@@ -478,7 +475,7 @@ the internal wiring of the simulation components.
 
 This \textit{two-phase} loading system architecture provides several advantages:
 \begin{enumerate}
-    \item \textbf{Efficient batch execution}: A single loader can generate multiple simulation instances with different parameter
+    \item \textbf{Efficient batch execution}: a single loader can generate multiple simulation instances with different parameter
     combinations without re-parsing the configuration. 
     \item \textbf{Parameter space exploration}: by using custom launchers, the user can systematically vary 
     free variables across simulation runs.
@@ -490,10 +487,10 @@ This \textit{two-phase} loading system architecture provides several advantages:
 
 The Alchemist simulation model was designed to be generic over two fundamental types that define the nature of the simulated system:
 \begin{itemize}
-    \item \textbf{T (Concentration Type)}: Represents the type of data stored inside the nodes (molecules' concentration).
+    \item \textbf{T (Concentration Type)}: represents the type of data stored inside the nodes (molecules' concentration).
      This is defined by the specific \textit{Incarnation} used (e.g., \texttt{Double} for chemical simulations, 
      \texttt{Any} for aggregate computing).
-    \item \textbf{P (Position Type)}: Represents the type of spatial coordinates used in the environment.
+    \item \textbf{P (Position Type)}: represents the type of spatial coordinates used in the environment.
      This type must extend the \texttt{Position<P>} interface (e.g., \texttt{Euclidean2DPosition}, \texttt{GeoPosition}).
 \end{itemize}
 
@@ -561,7 +558,7 @@ Later, when \texttt{getWith} is called, the system must cast a \texttt{Simulatio
 \label{sec:domain-model}
 
 To design a type-safe DSL that effectively replaces the YAML configuration, it is necessary to formalize the domain model of an Alchemist simulation configuration. 
-While the Alchemist core meta-model (described in Chapter~\ref{sec:background}) defines the runtime entities of a simulation, the \textbf{configuration domain} focuses on the declarative structures
+While the Alchemist core meta-model (described in \Cref{sec:background}) defines the runtime entities of a simulation, the \textbf{configuration domain} focuses on the declarative structures
  required to instantiate those entities.
 This domain model identifies the key concepts, their properties, and the relationships that the DSL must express.
 
@@ -578,11 +575,11 @@ The domain model is composed of three distinct areas of concern:
 Alchemist supports batch execution, allowing users to define a single configuration file that produces multiple simulation runs by varying parameters.
 To support this, the configuration domain distinguishes between three types of values:
 \begin{itemize}
-    \item \textbf{Constants}: Values that remain fixed across all batch runs.
-    \item \textbf{Free Variables}: Parameters that define the design space of the experiment. 
+    \item \textbf{Constants}: values that remain fixed across all batch runs.
+    \item \textbf{Free Variables}: parameters that define the design space of the experiment. 
     They do not have a single value but a range or set of values. 
     The system generates a separate simulation for each combination of free variables.
-    \item \textbf{Dependent Variables}: Values computed dynamically based on the current values of free variables (using formulas).
+    \item \textbf{Dependent Variables}: values computed dynamically based on the current values of free variables (using formulas).
 \end{itemize}
 The DSL must provide mechanisms to declare these variables and use them transparently within the configuration, 
 ensuring that type safety is maintained even when values are not known until runtime.
@@ -592,11 +589,11 @@ ensuring that type safety is maintained even when values are not known until run
 This part of the domain model configures \textit{how} the simulation is executed and observed, rather than \textit{what} is simulated.
 It includes:
 \begin{itemize}
-    \item \textbf{Launcher}: The component responsible for managing the simulation lifecycle (such as batch mode or single run mode).
-    \item \textbf{Seeds}: Configuration for the pseudo-random number generators. Alchemist typically separates the \textit{scenario RNG} (used for node placement) 
+    \item \textbf{Launcher}: the component responsible for managing the simulation lifecycle (such as batch mode or single run mode).
+    \item \textbf{Seeds}: configuration for the pseudo-random number generators. Alchemist typically separates the \textit{scenario RNG} (used for node placement) 
     from the \textit{simulation RNG} (used for stochastic events during execution) to ensure reproducibility.
-    \item \textbf{Monitors}: Observers that track the simulation progress or status (e.g., logging to console, updating a GUI).
-    \item \textbf{Exporters}: Specialized components responsible for data collection. 
+    \item \textbf{Monitors}: observers that track the simulation progress or status (e.g., logging to console, updating a GUI).
+    \item \textbf{Exporters}: specialized components responsible for data collection. 
     They export simulation data (e.g., molecule concentrations, node positions) to external formats (e.g., CSV, databases) for further analysis.
 \end{itemize}
 
@@ -606,21 +603,21 @@ The Model Definition describes the actual system to be simulated.
 Key entities include:
 
 \begin{itemize}
-    \item \textbf{Incarnation}: The foundational factory that defines the type system for the simulation ($T, P$). All other components must be compatible with the types defined here.
+    \item \textbf{Incarnation}: the foundational factory that defines the type system for the simulation ($T, P$). All other components must be compatible with the types defined here.
     
-    \item \textbf{Environment}: Represents the spatial context of the simulation (e.g., continuous 2D space, graph, grid). It dictates the Position type \texttt{P}.
+    \item \textbf{Environment}: represents the spatial context of the simulation (e.g., continuous 2D space, graph, grid). It dictates the Position type \texttt{P}.
     
-    \item \textbf{Network Model}: Defines the topology of connections between nodes (e.g., nodes connected if within a certain distance). This is governed by \texttt{LinkingRules}.
+    \item \textbf{Network Model}: defines the topology of connections between nodes (e.g., nodes connected if within a certain distance). This is governed by \texttt{LinkingRules}.
     
-    \item \textbf{Deployments}: Declarative generators that map geometric shapes (e.g., \texttt{Grid}, \texttt{Circle}) or algorithms to spatial positions. 
+    \item \textbf{Deployments}: declarative generators that map geometric shapes (e.g., \texttt{Grid}, \texttt{Circle}) or algorithms to spatial positions. 
     They determine where nodes are initially placed in the environment.
     
-    \item \textbf{Node Templates}: Define the internal structure of nodes. Since nodes are rarely configured individually, templates describe the properties of a generic node in a deployment:
+    \item \textbf{Node Templates}: define the internal structure of nodes. Since nodes are rarely configured individually, templates describe the properties of a generic node in a deployment:
     \begin{itemize}
-        \item \textbf{Contents}: Initial \texttt{Molecules} and their \texttt{Concentrations}.
-        \item \textbf{Programs}: The behavioral logic, composed of \texttt{Reactions}, which in turn consist of \texttt{Conditions}, \texttt{Actions}, and a \texttt{TimeDistribution}.
+        \item \textbf{Contents}: initial \texttt{Molecules} and their \texttt{Concentrations}.
+        \item \textbf{Programs}: the behavioral logic, composed of \texttt{Reactions}, which in turn consist of \texttt{Conditions}, \texttt{Actions}, and a \texttt{TimeDistribution}.
     \end{itemize}
-    \item \textbf{Global Programs}: Logic that operates on the entire environment rather than being attached to specific nodes. 
+    \item \textbf{Global Programs}: logic that operates on the entire environment rather than being attached to specific nodes. 
     Similar to node programs, they are composed of \texttt{Global Reactions} that can modify the environment.
-    \item \textbf{Layers}: Scalar fields mapped over the environment (e.g., to represent temperature or pollutant distribution) that nodes can sense.
+    \item \textbf{Layers}: scalar fields mapped over the environment (e.g., to represent temperature or pollutant distribution) that nodes can sense.
 \end{itemize}

@@ -9,11 +9,13 @@ The proposed solution aims to reconcile the static type safety of the host langu
 
 The design process focused on three key areas. 
 \begin{itemize}
-    \item \textbf{Component Instantiation}: The architecture shifts the responsibility of component instantiation 
+    \item \textbf{Component Instantiation}: the architecture shifts the responsibility of component instantiation 
     from the framework's reflection mechanism to the language itself, allowing for direct usage of Alchemist APIs.
-    \item \textbf{Context System}: A hierarchical context system is introduced to enforce domain rules and structural correctness at compile time, mirroring the containment logic of the simulation model.
-    \item \textbf{Deferred Execution}: A deferred execution strategy is employed to support parametric simulations, ensuring that a single script definition can generate multiple independent simulation instances.
+    \item \textbf{Context System}: a hierarchical context system is introduced to enforce domain rules and structural correctness at compile time, mirroring the containment logic of the simulation model.
+    \item \textbf{Deferred Execution}: a deferred execution strategy is employed to support parametric simulations, ensuring that a single script definition can generate multiple independent simulation instances.
 \end{itemize}
+
+\newpage
 
 \section{Architecture}
 
@@ -55,7 +57,7 @@ and describe the design decisions made for the DSL itself.
 
 To integrate with the existing Alchemist loading system, 
 the proposed architecture introduces a new implementation of the \textbf{Loader} interface. 
-As established in Section~\ref{sec:loadingphase1}, the \textit{Loader} serves as a factory for simulation instances, 
+As established in \Cref{sec:loadingphase1}, the \textit{Loader} serves as a factory for simulation instances, 
 parameterized by a set of variables that must be used in that specific simulation instance. 
 The core mechanism relies on the method:
 \begin{minted}[fontsize=\footnotesize, linenos]{kotlin}
@@ -73,19 +75,19 @@ The \textit{Launcher} is responsible for identifying the \textbf{variable space}
 and invoking the \textit{Loader} \texttt{getWith(values: Map<String, \*>)} method to create 
 the corresponding simulation instances. 
 
-\begin{figure}[H]
+\begin{figure}
     \centering
     \includegraphics[width=\textwidth]{figures/launcherloader.pdf}
     \caption{Loading system architecture}
     \label{fig:launcherLoader}
 \end{figure}
 
-As shown in Figure~\ref{fig:launcherLoader}, the relationship between these components exhibits a bidirectional binding:
+As shown in \Cref{fig:launcherLoader}, the relationship between these components exhibits a bidirectional binding:
 \begin{itemize}
     \item The \textit{Launcher} depends on the \textit{Loader} to obtain the simulation instance 
     (via the \texttt{getWith(values: Map<String, *>)} method).
     \item The \textit{Loader} holds a reference to the specified \textit{Launcher}, since the loader is the component 
-    that holds all the needed information to generate a simulation given the user configuration. The \textit{Launcher} is a 
+    that holds all information needed to generate a simulation given the user configuration. The \textit{Launcher} is a 
     configurable component that can be specified by the user to control the execution of the simulation.
 \end{itemize}
 
@@ -120,75 +122,75 @@ mirroring the structural containment of the domain entities.
 
 In this model, the availability of operations and data is strictly determined by the current scope. 
 For instance, the definition of a reaction makes sense only within the context of a node or a global program.
-This design should somehow mimic the nesting levels in the YAML configuration file, but in a more \textit{type-safe} way.
+This design mimics the nesting levels in the YAML configuration file, but in a more \textit{type-safe} way.
 While the YAML file allows, for example, defining a \textit{Deployment} inside a \textit{Deployment}, the nested context 
 prevents the user from defining such a configuration, since at each context level, only the allowed operations and data are available.
-The relationship between the components, as shown in Figure~\ref{fig:scoped-contexts}, is the following:
+The relationship between the components, as shown in \Cref{fig:scoped-contexts}, is the following:
 
 \begin{itemize}
-    \item The \textbf{Simulation Context} is the root context; it contains all the execution settings, 
-    as described in Section~\ref{sec:execution-settings}. 
+    \item \textbf{Simulation Context} is the root context; it contains all the execution settings, 
+    as described in \Cref{sec:execution-settings}. 
     \begin{itemize}
         \item Available elements: \textit{incarnation}, \textit{environment}, \textit{networkModel}, \textit{launcher}, \textit{simulationGenerator}, \textit{scenarioGenerator};
         \item Available operations: \textit{deployments}, \textit{programs}, \textit{monitors}, \textit{terminators}, \textit{exporter},
         \textit{layer}, \textit{variable}
     \end{itemize}
-
-    \item The \textbf{Deployments Context} handles the creation of node deployments.
+\newpage
+    \item \textbf{Deployments Context} handles the creation of node deployments.
     \begin{itemize}
         \item Available elements: \textit{generator};
         \item Available operations: \textit{deploy}
     \end{itemize}
 
-    \item The \textbf{Deployment Context} configures a specific deployment instance.
+    \item \textbf{Deployment Context} configures a specific deployment instance.
     \begin{itemize}
         \item Available elements: -;
         \item Available operations: \textit{all}, \textit{inside}, \textit{programs}, \textit{nodes}, \textit{properties}
     \end{itemize}
 
-    \item The \textbf{Content Context} defines the molecules and concentrations for nodes.
+    \item \textbf{Content Context} defines the molecules and concentrations for nodes.
     \begin{itemize}
         \item Available elements: \textit{filter}, \textit{molecule}, \textit{concentration};
         \item Available operations: -
     \end{itemize}
 
-    \item The \textbf{Programs Context} manages the reaction programs for nodes.
+    \item \textbf{Programs Context} manages the reaction programs for nodes.
     \begin{itemize}
         \item Available elements: -;
         \item Available operations: \textit{all}, \textit{inside}
     \end{itemize}
 
-    \item The \textbf{Program Context} specifies the details of a reaction.
+    \item \textbf{Program Context} specifies the details of a reaction.
     \begin{itemize}
         \item Available elements: \textit{node}, \textit{program}, \textit{timeDistribution}, \textit{reaction};
         \item Available operations: \textit{timeDistribution}, \textit{addAction}, \textit{addCondition}
     \end{itemize}
 
-    \item The \textbf{Properties Context} manages node properties.
+    \item \textbf{Properties Context} manages node properties.
     \begin{itemize}
         \item Available elements: -;
         \item Available operations: \textit{all}, \textit{inside}
     \end{itemize}
 
-    \item The \textbf{Property Context} assigns properties to nodes.
+    \item \textbf{Property Context} assigns properties to nodes.
     \begin{itemize}
         \item Available elements: \textit{filter}, \textit{node};
         \item Available operations: \textit{add}
     \end{itemize}
-
-    \item The \textbf{Exporter Context} configures data export.
+\newpage
+    \item \textbf{Exporter Context} configures data export.
     \begin{itemize}
         \item Available elements: \textit{type};
         \item Available operations: \textit{data}
     \end{itemize}
 
-    \item The \textbf{Layer Context} defines spatial layers.
+    \item \textbf{Layer Context} defines spatial layers.
     \begin{itemize}
         \item Available elements: \textit{molecule}, \textit{layer};
         \item Available operations: -
     \end{itemize}
 
-    \item The \textbf{Terminators Context}, \textit{Output Monitors Context}, and \textit{Global Programs Context} allow the addition of respective components.
+    \item \textbf{Terminators Context}, \textit{Output Monitors Context}, and \textit{Global Programs Context} allow the addition of respective components.
     \begin{itemize}
         \item Available elements: -;
         \item Available operations: \textit{add} 
@@ -199,7 +201,7 @@ This hierarchical design has been extracted from the Alchemist YAML specificatio
 and represents a direct translation of the YAML hierarchy into the DSL, with some minor syntax 
 changes.
 
-\begin{figure}[H]
+\begin{figure}
     \centering
     \includegraphics[width=\textwidth]{figures/contexts.pdf}
     \caption{Scoped Information Contexts diagram}\label{fig:scoped-contexts}
@@ -207,10 +209,10 @@ changes.
 
 This hierarchical design serves two purposes:
 \begin{enumerate}
-    \item \textbf{Scope Containment}: It prevents structural inconsistencies by restricting the visibility of methods.
+    \item \textbf{Scope Containment}: it prevents structural inconsistencies by restricting the visibility of methods.
      A user cannot accidentally define a deployment inside a deployment because the \textit{Deployment Context} 
      does not expose the API for deployment creation.
-    \item \textbf{Context Awareness}: Inner scopes transparently inherit relevant information from outer scopes. 
+    \item \textbf{Context Awareness}: inner scopes transparently inherit relevant information from outer scopes. 
     A node definition context automatically has access to the environment type defined in the parent scope, 
     eliminating the need for redundant type specifications.
 \end{enumerate}
@@ -249,7 +251,7 @@ The process is divided into two distinct phases:
     Variables must not be accessed during this phase, since they are not yet assigned any value. This phase should produce 
     a \textbf{SimulationContext} instance that stores all the needed information to 
     later allow the DSL loader component to materialize the simulation model, 
-    given the variable values for the current run. This \textit{SimulationContext} instance should be considered as the \textit{recipe}
+    given the variable values for the current run. This \textit{SimulationContext} instance should be considered the \textit{recipe}
     of the simulation, which will later be used to materialize the simulation model.
     \item \textbf{Materialization Phase}: This occurs repeatedly, once for each simulation in a batch. 
     The \textit{DSL Loader} invokes the recorded build tasks of the given \textit{SimulationContext} instance 
@@ -257,9 +259,9 @@ The process is divided into two distinct phases:
     for the current run.
 \end{enumerate}
 
-\begin{figure}[H]
+\begin{figure}
     \centering
-    \includegraphics[width=0.5\textwidth]{figures/lazyeval.pdf}
+    \includegraphics[width=0.7\textwidth]{figures/lazyeval.pdf}
     \caption{Lazy Evaluation model diagram}\label{fig:lazyeval}
 \end{figure}
 
@@ -301,9 +303,9 @@ Consequently, when the DSL logic subsequently accesses the variable, the request
 This architecture effectively decouples the definition of the simulation structure from the data that drives it.
 It ensures that the same compilation of the DSL script can support an arbitrary number of execution instances,
  each perceiving a unique, consistent view of the variable space. 
-Figure~\ref{fig:variable-proxy} shows this interaction.
+\Cref{fig:variable-proxy} shows this interaction.
 
-\begin{figure}[H]
+\begin{figure}
     \centering
     \includegraphics[width=0.4\textwidth]{figures/variablesdesign.pdf}
     \caption{Variables Context design diagram}

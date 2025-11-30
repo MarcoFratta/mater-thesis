@@ -3,11 +3,110 @@
 \label{chap:conclusion}
 %----------------------------------------------------------------------------------------
 
-% in future work we can talk about adding custom dsl syntax for each incarnation avodiing the 
-% chemical notation .
+This thesis has presented the design and implementation of a type-safe Domain-Specific Language 
+in Kotlin for configuring Alchemist simulations, 
+addressing the fundamental limitations of the existing YAML-based configuration system.
+ The proposed solution successfully reconciles the static type safety of the host language with the dynamic requirements 
+ of an extensible simulation framework, demonstrating that declarative configuration can
+  coexist with compile-time verification and a rich tooling support.
+
+
+  \paragraph{Future Work}
+
+  While the current implementation successfully addresses the core requirements, several directions for future enhancement
+  present themselves.
+  A natural extension would be the development of conversion tools that enable seamless migration between YAML and DSL formats. 
+  A \textbf{YAML-to-DSL converter} could automatically translate existing YAML configurations into equivalent DSL scripts,
+  facilitating the migration of legacy configurations.
+  
+  Currently, the DSL handles node programs as generic string values, 
+  requiring users to write reactions using the native syntax of each 
+  incarnation (e.g., \texttt{"\{token\} --> \{firing\}"}).
+  While this approach maintains compatibility with the existing Alchemist architecture, 
+  it sacrifices the type safety and IDE support that are core benefits of the DSL.
+  
+  Future work could extend the DSL to support \textbf{custom} DSLs for each incarnation, allowing users to define 
+  programs using incarnation-specific syntax that is fully integrated with Kotlin's type system. 
+  For example, instead of string-based 
+  reaction definitions, the SAPERE incarnation could provide a DSL that allows users to define eco-laws using type-safe constructs:
+  
+  \begin{minted}[fontsize=\footnotesize, linenos]{kotlin}
+  sapere {
+      deployments {
+          programs {
+              ecoLaw {
+                  consume("token")
+                  produce("firing")
+              }
+          }
+      }
+  }
+  \end{minted}
+  
+  This can also be extended to support custom DSLs for each incarnation, creating an adapter layer that translates the custom 
+  incarnation-specific DSL into the generic DSL.
+  
+  
+
+
+\paragraph{Conclusion}
+
+The primary contribution of this work is a complete DSL implementation that is an alternative to YAML for configuring Alchemist simulations
+while maintaining full semantic equivalence with the legacy system. 
+The DSL leverages Kotlin's advanced language features, such as lambdas with receivers,
+delegated properties, 
+and context parameters, to create a declarative syntax that closely mirrors the domain model of Alchemist simulations.
+
+A key technical achievement is the resolution of the challenge of allowing the usage of legacy Alchemist classes 
+while maintaining usability and type safety.
+Through the use of Kotlin Symbol Processing (KSP), the system automatically generates type-safe helper 
+functions that bridge the gap between the simplified DSL API and the complex constructors of Alchemist components.
+This generative approach ensures that the DSL remains extensible: 
+any new Alchemist component can be integrated into the DSL simply by annotating it with \texttt{@AlchemistKotlinDSL},
+without requiring modifications to the DSL core.
+
+The implementation successfully addresses the batch execution requirement through a deferred 
+evaluation model combined with thread-local variable resolution. 
+This design allows a single DSL script to generate multiple independent simulation instances with varying parameters, 
+while maintaining thread safety in concurrent execution scenarios.
 
 
 
+The following shows a comparison between a YAML configuration and the equivalent DSL configuration:
+
+\inputminted[
+fontsize=\scriptsize,
+breaklines,
+linenos
+]{yaml}{listings/15-variables.yml}
+\captionof{lstlisting}
+{Example of a YAML configuration with variables}
+\label{lst:yaml-variables}
+\newpage
+
+\inputminted[
+fontsize=\scriptsize,
+breaklines,
+linenos
+]{kotlin}{listings/15-variables.alchemist.kts}
+\captionof{lstlisting}
+{Equivalent DSL configuration of \protect\Cref{lst:yaml-variables}}
+
+
+
+The successful implementation of the Alchemist DSL demonstrates that type-safe configuration languages are not only 
+feasible but also provide significant advantages over traditional untyped formats. 
+The work shows that modern language features can be leveraged to create DSLs that are both highly usable and fully extensible,
+ without sacrificing the flexibility required by complex, extensible frameworks.
+
+The generative approach using KSP represents a scalable solution to the challenge of maintaining type safety in the
+presence of dynamic class loading.
+This technique could be applied to other domains where similar challenges exist between static verification and runtime flexibility.
+
+Furthermore, the DSL's support for modularity and code reuse addresses a fundamental limitation of 
+data-serialization-based configuration formats, enabling users to build libraries of reusable simulation components
+ and share them across projects. This capability transforms simulation configuration from writing monolithic files
+  to composing simulations from multiple building blocks.
 
 
 
