@@ -3,7 +3,7 @@
 \label{chap:introduction}
 %----------------------------------------------------------------------------------------
 
-Modern software systems, from cloud infrastructure orchestrators to scientific simulation frameworks, 
+Modern software systems, from cloud infrastructure orchestrators to distributed applications, 
 increasingly rely on declarative configuration to specify their structure, behavior, and parameters.
 This separation of configuration from implementation enables a single codebase to serve diverse use cases 
 through different configuration artifacts, facilitating reproducibility and version control.
@@ -16,15 +16,9 @@ and YAML Ain't Markup Language (YAML)\footnote{\url{https://yaml.org/}}, as the 
 These formats were initially designed to offer human readability and widespread tool support, 
 but their fundamental design as untyped data structures introduces severe limitations that become increasingly
 problematic as configuration complexity grows.
-Type information exists only implicitly through runtime validation, meaning configuration errors surface only when the system attempts
- to load or execute the configuration, potentially after significant development effort has been invested.
-The absence of compile-time verification means that typos, 
-mismatched parameter types, or structural inconsistencies remain undetected until runtime,
- leading to opaque error messages and time-consuming debugging sessions.
 
-Beyond the lack of type safety, these formats provide limited mechanisms for code reuse, abstraction, and modularity.
-While YAML supports anchors and aliases for within-file reuse, and XML provides standardized inclusion mechanisms, 
-none of these formats offer the modularity and type-checked composition that programming languages provide.
+Beyond the lack of type safety, these formats provide limited mechanisms for code reuse, abstraction, and modularity. 
+None of these formats offer the modularity and type-checked composition that programming languages provide.
 Complex configurations often span hundreds of lines, with semantic relationships obscured by syntactic boilerplate, 
 making them difficult to understand, maintain, and extend.
 
@@ -39,16 +33,8 @@ addressing the fundamental challenge of reconciling the static nature of type sy
 The work demonstrates how modern language features, can be used to create DSLs that are both 
 type-safe and highly usable, without sacrificing the flexibility required by extensible systems.
 
-The \textit{Alchemist simulation framework}\cite{alchemistold} serves as a concrete use case for this thesis.
-Alchemist is a general-purpose simulation framework designed for modeling spatially-distributed systems, 
-enabling researchers to model diverse phenomena ranging from biochemical networks to distributed computing systems, 
-crowd dynamics, and swarm robotics.
-Currently, Alchemist simulations are configured via YAML files, following a YAML specification that allows users to have full control 
-over the simulation configuration.
-However, as simulation complexity grows, the limitations of YAML-based configuration become increasingly problematic, 
-adversely affecting the usability and maintainability of configuration files.
-This thesis presents a \textit{Kotlin-based}\footnote{\url{https://kotlinlang.org/}} DSL that aims to replace YAML 
-as the primary configuration format for Alchemist, 
+The \textit{Alchemist simulation framework}~\cite{alchemistold} serves as a concrete use case for this thesis.
+This work presents a \textit{Kotlin-based}\footnote{\url{https://kotlinlang.org/}} DSL for configuring Alchemist simulations, 
 demonstrating how type-safe configuration languages can improve developer experience, reduce errors, and enhance maintainability 
 while preserving the semantic equivalence and extensibility of the original system.
 
@@ -56,7 +42,7 @@ The first part of this thesis is \Cref{chap:background-motivation}, which provid
  information and details the context and motivation behind this thesis work, 
 establishing the foundational concepts of Domain-Specific Languages and the challenges of configuration management for complex systems.
 \Cref{chap:analysis} analyzes the requirements and constraints for developing the DSL, 
-examining the limitations of the current YAML approach and establishing the domain model that guides the DSL design,
+examining the limitations of the current YAML approach and establishing the domain model that guides the DSL design.
 \Cref{chap:design} presents the design of the DSL, including its architecture and key design decisions that reconcile 
 type safety with the dynamic requirements of extensible frameworks.
 \Cref{chap:implementation} describes the implementation details and challenges encountered during development, 

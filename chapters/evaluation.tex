@@ -26,7 +26,7 @@ Given that the DSL relies on a consistent recursive builder pattern, the strateg
 the most complex and critical infrastructure components: the variable management system and the 
 type-safe context propagation.
 
-The \textbf{Variables Context} received the most extensive unit testing coverage due to its central 
+The \texttt{VariablesContext} received the most extensive unit testing coverage due to its central 
 role in enabling batch executions. 
 Unit tests specifically targeted this component to ensure that the delegation mechanism correctly captures default 
 values during the definition phase and that the \texttt{DSLLoader} successfully injects run-specific values
@@ -70,7 +70,7 @@ The tests asserted that the processor:
 \subsection{Equivalence Testing}
 \label{subsec:equivalence-testing}
 
-To demonstrate compliance with the \textbf{YAML equivalence} requirement, an integration test suite was developed. 
+To demonstrate compliance with the \textbf{YAML equivalence} requirement (\hyperref[subsec:yaml-equivalence]{FR1}), an integration test suite was developed. 
 The objective was to prove that for any valid YAML configuration, a semantically \textbf{identical} DSL script exists and produces 
 an indistinguishable simulation model.
 This verification relies on a set of \textit{reference scenarios}, covering the full spectrum of Alchemist features, 
@@ -125,7 +125,7 @@ they must evolve through identical states over time.
 
 The \texttt{RuntimeComparisonHelper} executes both the YAML-generated and DSL-generated simulations,
  stepping them forward for a fixed duration or a specific number of steps. 
-At the end of this execution, the framework compares the tangible, observable state of the simulation—properties that are 
+At the end of this execution, the framework compares the tangible, observable state of the simulation, properties that are 
 publicly accessible and critical to the simulation's outcome:
 \begin{itemize}
     \item \textbf{Global State}: Asserting that both simulations reached the exact same simulation time and step count.
@@ -142,7 +142,8 @@ It confirms not only that the components are of the right type, but that they we
 \subsection{Performance Testing}
 \label{subsec:performance-testing}
 
-While the primary goal of the DSL is usability and safety, the \textbf{performance} of the loading phase must 
+While the primary goal of the DSL is usability and safety, as required by the \textbf{Performance}
+ non-functional requirement (\hyperref[subsec:performance]{NFR3}), the performance of the loading phase must 
 remain within acceptable limits. 
 The \texttt{PerformanceComparisonTest} suite benchmarks the initialization time of the DSL against the YAML loader.
 The tests measure the time required to parse the configuration and produce a ready-to-run \texttt{Simulation} object.
@@ -177,7 +178,7 @@ The test was made using a moderately complex simulation configuration, as shown 
     ]{kotlin}{listings/complextestsim.kts}
     \end{minipage}
     \captionof{lstlisting}
-    {Simulation configuration used for the performance test}
+    {Simulation configuration used for the performance test.}
     \label{lst:complextestsim}
 \end{center}
 \newpage
@@ -193,7 +194,7 @@ configuration using both the YAML loader and the DSL loader.
 
 \begin{table}[h]
 \centering
-\caption{Performance comparison results (20 iterations)}
+\caption{Performance comparison results (20 iterations).}
 \label{tab:performance-results}
 \begin{tabular}{l|r|r}
 \textbf{Phase} & \textbf{YAML (ms)} & \textbf{DSL (ms)} \\
@@ -229,9 +230,9 @@ comparing it qualitatively against the legacy YAML-based workflow.
 \label{subsec:usability}
 
 The adoption of Kotlin as the host language transforms the configuration process from writing passive data 
-descriptions (YAML) 
-to developing active simulation software. 
-This shift introduces several key improvements in usability:
+descriptions (YAML) to developing active simulation software. 
+This shift directly addresses the \textbf{Usability} non-functional requirement (\hyperref[subsec:dsl-api-usability]{NFR1}) 
+by introducing several key improvements:
 
 \begin{itemize}
     \item \textbf{IDE-Assisted Development}: Unlike YAML, where users must rely on external documentation or 
@@ -254,6 +255,29 @@ This shift introduces several key improvements in usability:
     This provides a structural guarantee that the YAML parser could only approximate through runtime validation.
 \end{itemize}
 
+The \Cref{lst:yaml-version} and \Cref{lst:dsl-version} show a comparison between a YAML configuration and the equivalent DSL configuration:
+
+\newpage
+
+\inputminted[
+fontsize=\scriptsize,
+breaklines,
+linenos
+]{yaml}{listings/15-variables.yml}
+\captionof{lstlisting}
+{Example of a YAML configuration with variables.}
+\label{lst:yaml-version}
+\newpage
+
+\inputminted[
+fontsize=\scriptsize,
+breaklines,
+linenos
+]{kotlin}{listings/15-variables.alchemist.kts}
+\captionof{lstlisting}
+{Equivalent DSL configuration of \protect\Cref{lst:yaml-version}.}
+\label{lst:dsl-version}
+
 One of the most powerful advantages of using Kotlin as the host language is the ability to create reusable 
 components and functions that can be shared across multiple simulation files. 
 Unlike YAML, where configuration must be duplicated or manually copied between files, 
@@ -263,6 +287,7 @@ This approach promotes code reuse, reduces duplication, and ensures consistency 
 
 Consider, for example, a scenario where multiple simulations require a similar deployment pattern, 
 such as a grid-based node placement with a specific reaction configuration. 
+\newpage
 In YAML, this pattern would need to be replicated in each configuration file, 
 making it difficult to maintain consistency and apply changes uniformly. 
 
@@ -289,7 +314,7 @@ deployments:
     - time-distribution: 10
       type: Event
 \end{minted}
-\captionof{lstlisting}{Example of a YAML simulation script with a complex deployment}
+\captionof{lstlisting}{Example of a YAML simulation script with a complex deployment.}
 
 With the Kotlin DSL, users can define a reusable function that encapsulates this pattern:
 
@@ -308,9 +333,11 @@ fun createLagoon() = listOf(
     45.2038121 to 12.2504425,
 )
 \end{minted}
-\captionof{lstlisting}{Example of a reusable deployment function}
+\captionof{lstlisting}{Example of a reusable deployment function.}
 
-The \textit{createLagoon} function can now be used to create a lagoon deployment in any simulation script:
+\newpage
+
+The \texttt{createLagoon} function can now be used to create a lagoon deployment in any simulation script:
 
 \begin{minted}[fontsize=\footnotesize, linenos]{kotlin}
 simulation(incarnation) {
@@ -330,11 +357,11 @@ simulation(incarnation) {
 \end{minted}
 
 This approach makes the configuration more readable and maintainable. 
-Modifying the lagoon deployment requires only updating the \textit{createLagoon} function, 
+Modifying the lagoon deployment requires only updating the \texttt{createLagoon} function, 
 without the need to update all configurations that use it.
 
 Another approach is to directly define new DSL blocks to match the simulation domain. 
-For example, a \textit{lagoon} block can be defined as follows:
+For example, a \texttt{lagoon} block can be defined as follows:
 
 \begin{minted}[fontsize=\footnotesize, linenos]{kotlin}
 simulation(incarnation) {
@@ -357,7 +384,7 @@ domain by creating reusable libraries or modules.
 These domain-specific extensions can define functions and DSL blocks with names and structures 
 that align with the terminology and concepts of the target domain, 
 such as \texttt{lagoon}, \texttt{swarm}, or \texttt{agent}. 
-This domain-driven customization significantly enhances the readability of simulation scripts, 
+This domain-driven customization significantly enhances the readability and expressiveness of simulation scripts, 
 as the syntax becomes more intuitive and self-documenting for domain experts. 
 Furthermore, it provides users with greater control over the DSL syntax, 
 enabling them to create abstractions that precisely match their modeling needs 
@@ -390,7 +417,7 @@ However, this design allows users to fully customize the DSL to match their spec
 The introduction of the KSP processor was a \textbf{decisive} factor in making the DSL usable in practice. 
 Without the automatic generation of bridge code, the DSL would have suffered from severe verbosity, 
 requiring users to manually inject system dependencies (like \texttt{environment} or \texttt{randomGenerator}) into every component constructor.
-In the example below (\Cref{lst:example-verbose}), the usage of a \textit{BrownianMove} reaction would have been very verbose, since the reaction 
+In the example below (\Cref{lst:example-verbose}), the usage of a \texttt{BrownianMove} reaction would have been very verbose, since the reaction 
 block is deeply nested in the context hierarchy. In this case, the reaction also requires several internal parameters to be passed to the constructor, 
 reducing the readability of the code.
 
@@ -418,8 +445,8 @@ simulation(incarnation) {
     }
 }
 \end{minted}
+\captionof{lstlisting}{Example of a simulation script with no helper functions.}
 \label{lst:example-verbose}
-\captionof{lstlisting}{Example of a simulation script with no helper functions}
 
 With the KSP processor, it generates a helper function that can be used to create the reaction (as shown in \Cref{lst:example-helper}), 
 simplifying the code and improving the readability. It also avoids the need to manually inject the system dependencies into the constructor, 
@@ -443,9 +470,13 @@ simulation(incarnation) {
     }
 }
 \end{minted}
+\captionof{lstlisting}{Example of simulation script with helper functions.}
 \label{lst:example-helper}
-\captionof{lstlisting}{Example of simulation script with helper functions}
 
 Note that, by default, the generated functions are defined using the same name of the object they are generating, 
 but with the first letter in lowercase. This should simplify the usage of the helper functions, since users can just
 use the lowercase version of the object name to call the helper function. 
+
+The KSP processor directly addresses the \textbf{Extensibility} non-functional requirement (\hyperref[subsec:extensibility]{NFR2}) by enabling 
+seamless integration of new components into the DSL. Users can extend the DSL with custom components simply by annotating 
+them with \texttt{@AlchemistKotlinDSL}, without requiring modifications to the DSL core or the underlying framework.

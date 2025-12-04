@@ -10,20 +10,17 @@
 \usepackage{subcaption}
 
 \school{\unibo}
-\programme{Corso di Laurea Magistrale in Ingegneria e Scienze Informatiche}
+\programme{Second Cycle Degree in Computer Science and Engineering}
 \title{Type-Safe Complex Specifications in Kotlin: a DSL to Configure the Alchemist Simulator}
 \author{Marco Frattarola}
 \date{\today}
 \subject{Software Process Engineering}
 \supervisor{Prof. Gianluca Aguzzi}
-\cosupervisor{Dott. Danilo Pianini}
+\cosupervisor{Prof. Danilo Pianini}
 \morecosupervisor{}
 \session{I}
 \academicyear{2024-2025}
 
-% Definition of acronyms
-\acrodef{IoT}{Internet of Thing}
-\acrodef{vm}[VM]{Virtual Machine}
 
 
 \mainlinespacing{1.241} % line spacing in mainmatter, comment to default (1)
@@ -33,7 +30,26 @@
 \frontmatter\frontispiece
 
 \begin{abstract}	
-Max 2000 characters, strict.
+Modern software systems rely on declarative configuration to specify complex behaviors, yet the industry has
+ converged on untyped formats (XML, JSON, and YAML) that introduce severe limitations: 
+ runtime errors, implicit type validation, and limited code reuse mechanisms.
+
+This thesis addresses the challenge of replacing untyped declarative configuration formats with 
+type-safe internal Domain-Specific Languages (DSLs) in Kotlin 
+for configuring complex systems and behaviors. 
+The central challenge is reconciling static type verification with dynamic extensibility requirements 
+of frameworks supporting arbitrary class loading and runtime component discovery.
+
+The solution employs generative techniques, leveraging compiler plugin APIs like Kotlin Symbol Processing (KSP), 
+to bridge simplified DSL APIs with legacy component interfaces while maintaining type safety and enabling compile-time validation.
+The approach demonstrates that transitioning to type-safe configuration languages yields substantial benefits: 
+compile-time error detection, comprehensive IDE support, and evolution from monolithic files to composable, reusable modules.
+
+The work is validated through the development of a DSL for Alchemist, a general-purpose simulation framework, 
+which maintains semantic equivalence with legacy YAML configurations while providing type safety, tooling support,
+ and modularity benefits.
+This case study demonstrates how type-safe DSLs can successfully 
+replace untyped configuration formats in complex, extensible systems.
 \end{abstract}
 
 \begin{dedication} % this is optional
